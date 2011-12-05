@@ -4,12 +4,17 @@ define(
     , '/media/js/network.js']
     , module )
 
-Network       = new Context(threads.SERVER_UUID)
-RendererLoop  = new Context(threads.CLIENT_UUID)
-Thread        = new Context(threads.CLIENT_UUID+':thread')
+CONTEXTS = {
+    Network       : new Context(threads.SERVER_UUID)
+  , RendererLoop  : new Context(threads.CLIENT_UUID)
+  , Thread        : new Context(threads.CLIENT_UUID+':thread')
+}
 
 function module(game, renderer, network) {
 
+  var defs = init_definitions(Definition) 
+
+  Definition.define_authority(CONTEXTS)
 
   network.init(Network, function() {
     var worker = new Worker('/media/js/worker.js')
@@ -23,7 +28,7 @@ function module(game, renderer, network) {
         renderer.load(manifest || {}, function() {
 
           // start the worker...
-          threads.THREAD_UUID = Thread.uuid
+          threads.THREAD_UUID = CONTEXTS.Thread.uuid
           worker.postMessage({init:true, threads:threads, all:all_data})
 
           renderer.start(controlling_id, network, worker, all_data)

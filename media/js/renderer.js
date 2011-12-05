@@ -43,11 +43,11 @@ proto.init = function(worker, ready) {
   self.ctxt = ctxt
 
   worker.onmessage = function(ev) {
-    if(ev.data.context === Thread.uuid) {
-      RendererLoop.recv_update(ev.data.payload, Thread)
+    if(ev.data.context === CONTEXTS.Thread.uuid) {
+      CONTEXTS.RendererLoop.recv_update(ev.data.payload, CONTEXTS.Thread)
 
       // keep the local thread updated.
-      Thread.recv_update(ev.data.payload, Thread)
+      CONTEXTS.Thread.recv_update(ev.data.payload, CONTEXTS.Thread)
     } else if(ev.data.channel === 'log') {
       console.log.apply(console, ['THREAD'].concat(ev.data.data))
     } else if(ev.data.channel === 'error') {
@@ -66,7 +66,6 @@ proto.load = function(manifest, ready) {
   // {textures:{name:source}
   // ,programs:{name:{fs:<source>,vs:<source>}}
   // ,models:{name:source}}
-  console.log(manifest)
 
   var textures_done = Object.keys(manifest.textures || {}).length
     , programs_done = Object.keys(manifest.programs || {}).length
@@ -105,7 +104,7 @@ proto.start = function(controlling_id, network, worker, all_data) {
     , self = this
 
   self.camera = new Camera(controlling)
-  self.input = new this.input_class(RendererLoop.create_object(this.input_class.Definition), controlling, self.camera)
+  self.input = new this.input_class(CONTEXTS.RendererLoop.create_object(Definition.all.Input), controlling, self.camera)
 
   requestAnimFrame(function iter() {
 
@@ -115,12 +114,12 @@ proto.start = function(controlling_id, network, worker, all_data) {
       renderables[i].render(self.camera)
     }
 
-    var payload = RendererLoop.create_update()
+    var payload = CONTEXTS.RendererLoop.create_update()
     network.send('update', payload, function() {
       // no ack necessary.  
     })
     worker.postMessage({
-        context:RendererLoop.uuid
+        context:CONTEXTS.RendererLoop.uuid
       , payload:payload
     })
 
@@ -128,7 +127,7 @@ proto.start = function(controlling_id, network, worker, all_data) {
   }, canvas)
 
   network.on('update', function(payload) {
-    console.log('GOT UPDATE', Network.uuid)
+    console.log('GOT UPDATE', CONTEXTS.Network.uuid)
     worker.postMessage({
         context:Network.uuid
       , payload:payload

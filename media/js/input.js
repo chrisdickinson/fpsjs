@@ -49,24 +49,5 @@ Input.events.mouseup = function(ev) {
 }
 
 function init() {
-  var InputDefinition = new Definition('Input'
-      , {
-          mouse_0:false
-        , mouse_1:false
-        , mouse_x:0
-        , mouse_y:0
-        , key_87:false    // w
-        , key_65:false    // a
-        , key_83:false    // s
-        , key_68:false    // d
-        , key_spc:false   // space
-      }
-      , [ 
-          [Network, RendererLoop]
-        , [Thread, RendererLoop]
-        , [RendererLoop]
-      ])
-
-  Input.Definition = InputDefinition
   return Input
 }

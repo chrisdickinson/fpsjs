@@ -4,14 +4,6 @@ function Game() {
 
 var proto = Game.prototype
 
-var CounterDefinition = new Definition('counter', {
-  counter:0
-}, [
-  [RendererLoop, Thread],
-  [Thread]
-])
-
-
 proto.thread_loop = function(fn, interval) {
   var self = this
     , now = Date.now()

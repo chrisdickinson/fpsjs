@@ -13,6 +13,8 @@ console = {
 , error:logger('error')
 }
 
+CONTEXTS = {}
+
 importScripts(
     'definition.js'
   , 'context.js'
@@ -22,19 +24,19 @@ importScripts(
 onmessage = function(ev) {
   if(ev.data.init) {
     worker_init(ev.data.threads, ev.data.all)
-  } else if(ev.data.context === Network.uuid) {
-    Thread.recv_update(ev.data.payload, Network)
-  } else if(ev.data.context === RendererLoop.uuid) {
-    Thread.recv_update(ev.data.payload, RendererLoop)
+  } else if(ev.data.context === CONTEXTS.Network.uuid) {
+    Thread.recv_update(ev.data.payload, CONTEXTS.Network)
+  } else if(ev.data.context === CONTEXTS.RendererLoop.uuid) {
+    CONTEXTS.Thread.recv_update(ev.data.payload, CONTEXTS.RendererLoop)
   }
 }
 
 function worker_init(threads, all) {
-  Network       = new Context(threads.SERVER_UUID)
-  RendererLoop  = new Context(threads.CLIENT_UUID)
-  Thread        = new Context(threads.THREAD_UUID)
+  CONTEXTS.Network       = new Context(threads.SERVER_UUID)
+  CONTEXTS.RendererLoop  = new Context(threads.CLIENT_UUID)
+  CONTEXTS.Thread        = new Context(threads.THREAD_UUID)
 
-  Context.set(Thread)
+  Context.set(CONTEXTS.Thread)
 
   importScripts(
       'game.js'
@@ -42,25 +44,22 @@ function worker_init(threads, all) {
     , 'game_defs.js'
   )
 
-  var counter = Context.current().create_object(CounterDefinition)
+  init_definitions(Definition)
 
-  counter.update = function(dt) {
-    this.counter = dt 
-  }
+  Definition.define_authority(CONTEXTS)
 
-  console.log('starting up...', typeof Network)
-  Thread.recv_update(all, Network) 
+  CONTEXTS.Thread.recv_update(all, CONTEXTS.Network) 
   game.thread_loop(function(dt) {
     // update all the objects.
-    Object.keys(Thread.objects).forEach(function(key) {
-      var item = Thread.objects[key]
+    Object.keys(CONTEXTS.Thread.objects).forEach(function(key) {
+      var item = CONTEXTS.Thread.objects[key]
       item.update && item.update(dt)
     })
 
     // send the data back up
     postMessage({
-      context:Thread.uuid
-    , payload:Thread.create_update()
+      context:CONTEXTS.Thread.uuid
+    , payload:CONTEXTS.Thread.create_update()
     })
   }, 33)
 }
