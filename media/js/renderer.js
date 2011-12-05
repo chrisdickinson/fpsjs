@@ -98,6 +98,8 @@ function Camera() {
   
 }
 
+Camera.prototype.rotate = function(){}
+
 proto.start = function(controlling_id, network, worker, all_data) {
 
   var controlling = controlling_id ? Renderer.objects[controlling_id] : null
@@ -105,6 +107,11 @@ proto.start = function(controlling_id, network, worker, all_data) {
 
   self.camera = new Camera(controlling)
   self.input = new this.input_class(CONTEXTS.RendererLoop.create_object(Definition.all.Input), controlling, self.camera)
+
+  var events = this.input.events()
+  for(var key in events) {
+    document.addEventListener(key, events[key])
+  }
 
   requestAnimFrame(function iter() {
 
@@ -114,14 +121,15 @@ proto.start = function(controlling_id, network, worker, all_data) {
       renderables[i].render(self.camera)
     }
 
-    var payload = CONTEXTS.RendererLoop.create_update()
-    network.send('update', payload, function() {
-      // no ack necessary.  
-    })
-    worker.postMessage({
-        context:CONTEXTS.RendererLoop.uuid
-      , payload:payload
-    })
+    var payload = CONTEXTS.RendererLoop.create_update(CONTEXTS.Network)
+
+    if(payload) {
+      worker.postMessage({
+          context:CONTEXTS.RendererLoop.uuid
+        , payload:payload
+      })
+      network.send('update', payload)
+    }
 
     requestAnimFrame(iter, canvas)
   }, canvas)

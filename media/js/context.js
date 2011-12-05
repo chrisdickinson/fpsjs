@@ -4,12 +4,14 @@ if(typeof module === 'undefined') {
   ContextObject = require('./context_object')
 }
 
-function Context(uuid) {
+function Context(uuid, definition_class) {
   this.uuid = uuid
 
   this.id_counter = 0
 
   this.objects = {}
+
+  this.definition_class = definition_class
 }
 
 Context.prototype.create_object = function(definition) {
@@ -24,24 +26,37 @@ Context.prototype.create_object = function(definition) {
 
 Context.prototype.recv_object = function(definition_id, uuid) {
   console.log('creating ', definition_id, uuid)
-  obj = new ContextObject(Definition.lookup(definition_id), uuid)
+  obj = new ContextObject((this.definition_class || Definition).lookup(definition_id), uuid)
   this.objects[uuid] = obj
   return obj
 }
 
-Context.prototype.create_update = function(full) {
+Context.prototype.create_update = function(for_context, full) {
   full = full === undefined ? false : true
   var payload = {}
-  for(var i = 0, all=Object.keys(this.objects), len = all.length; i < len; ++i) {
-    var deleted = false
-    payload[all[i]] = (deleted = this.objects[all[i]].__deleted__) ? 
-        [this.objects[all[i]].__definition__.id, 'deleted'] : 
-        [this.objects[all[i]].__definition__.id, this.objects[all[i]].send_update(full)]
+    , def
+    , deleted
+    , item
+    , valid = false
 
+  for(var i = 0, all=Object.keys(this.objects), len = all.length, item=this.objects[all[i]]; i < len; ++i) {
+    def = item.__definition__
+
+    deleted = item.__deleted__
+    if(full || (def.is_authoritative(this, for_context) && item.__is_dirty__)) {
+      payload[all[i]] = deleted ? 
+          [item.__definition__.id, 'deleted'] : 
+          [item.__definition__.id, item.send_update(full)]
+
+      item.__is_dirty__ = false
+      valid = true
+    }
     if(deleted) {
       delete this.objects[all[i]]
     }
   }
+  if(!valid) return
+
   return payload
 }
 
@@ -49,7 +64,7 @@ var UP = 0
 
 Context.prototype.recv_update = function(payload, from_context) {
   for(var i = 0, all=Object.keys(payload), len = all.length, key; key = all[i], i < len; ++i) {
-    var def = Definition.lookup(payload[key][0])
+    var def = (this.definition_class || Definition).lookup(payload[key][0])
 
     // only apply updates from authoritative contexts.
     if(!def) console.log(payload[key][0])

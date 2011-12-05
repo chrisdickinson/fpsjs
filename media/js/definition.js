@@ -33,17 +33,18 @@ function init() {
         get: function() { return this.__attrs__[idx] }
       , set: function(val) {
           this.__dirty__[idx] = true
+          this.__is_dirty__ = true
           return (this.__attrs__[idx] = val)  
         }
     }
   }
 
   proto.is_authoritative = function(from_context, current_context) {
-    var map = this.authority_map.filter(function(item) {
+    return this.authority_map.filter(function(item) {
       return item[0] === current_context
-    })[0]
-
-    return map[1] === from_context
+    }).reduce(function(lhs, rhs) {
+      return lhs && (rhs[1] === from_context || rhs[1] === undefined)
+    }, true)
   }
 
   proto.define_authority = function(fn) {

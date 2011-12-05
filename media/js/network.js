@@ -32,10 +32,8 @@ proto.init = function(context, ready) {
   ready()
 }
 
-var need_ack = ['join']
-
 proto.send = function(what, data, ready) {
-  if(need_ack.indexOf(what) !== -1) {
+  if(ready) {
     var msgid = Date.now()
     this.ack[msgid] = ready
     data = {'ack':msgid, 'data':data}

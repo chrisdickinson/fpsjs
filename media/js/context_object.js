@@ -16,6 +16,8 @@ function init() {
     self.__definition__ = definition
     self.__uuid__ = uuid
 
+    self.__is_dirty__ = false
+
     definition.keys.forEach(function(key, idx) {
       self.__attrs__[idx] = definition.defaults[key]
     })
