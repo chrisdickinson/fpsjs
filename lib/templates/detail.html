@@ -1,0 +1,21 @@
+<!doctype html>
+
+<meta charset="utf8">
+
+<title>FPS.js</title>
+<script type="text/javascript">
+  threads = {
+    SERVER_UUID:'{{ game.id }}'
+  , CLIENT_UUID:'{{ game.create_client_uuid }}'
+  }
+</script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/media/js/context.js"></script>
+<script src="/media/js/context_object.js"></script>
+<script src="/media/js/definition.js"></script>
+<script src="/media/js/game_defs.js"></script>
+<script src="/media/js/require.js" data-main="/media/js/main"></script>
+
+<canvas id="canvas"></canvas>
+<button>Click here to start</button>
+
