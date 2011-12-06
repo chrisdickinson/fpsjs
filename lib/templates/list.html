@@ -7,7 +7,12 @@
   <label for="id_name">Game Name</label>
     <input id="id_name" type="text" name="name" />
   <label for="id_map">Map</label>
-    <input id="id_map" type="text" name="map" />
+    <select id="id_map" name="map">
+      <option value="">----</option>
+      {% for value, obj in missions|iteritems %}
+        <option value="{{ value }}">{{ obj.meta.name }}</option>
+      {% endfor %}
+    </select>
   <input type="submit" value="submit" />
 </form>
 
