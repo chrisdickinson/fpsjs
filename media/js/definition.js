@@ -10,6 +10,7 @@ function init() {
     this.authority_map = []
     this.constructor.all[id] = this
     this.authority_def = function(){}
+    this.proto = function(o){ return o } 
   }
 
   Definition.all = {}
@@ -37,6 +38,10 @@ function init() {
           return (this.__attrs__[idx] = val)  
         }
     }
+  }
+
+  proto.set_proto  = function(fn) {
+    this.proto = fn
   }
 
   proto.is_authoritative = function(from_context, current_context) {

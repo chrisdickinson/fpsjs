@@ -25,9 +25,12 @@ onmessage = function(ev) {
   if(ev.data.init) {
     worker_init(ev.data.threads, ev.data.all)
   } else if(ev.data.context === CONTEXTS.Network.uuid) {
-    Thread.recv_update(ev.data.payload, CONTEXTS.Network)
+    console.log(ev.data.payload)
+    CONTEXTS.Thread.recv_update(ev.data.payload, CONTEXTS.Network)
   } else if(ev.data.context === CONTEXTS.RendererLoop.uuid) {
     CONTEXTS.Thread.recv_update(ev.data.payload, CONTEXTS.RendererLoop)
+  } else {
+    console.error('WHAT IS THIS FOR: ', ev.data)    
   }
 }
 
@@ -48,7 +51,9 @@ function worker_init(threads, all) {
 
   Definition.define_authority(CONTEXTS)
 
-  CONTEXTS.Thread.recv_update(all, CONTEXTS.Network) 
+  CONTEXTS.Thread.recv_update(all, CONTEXTS.Network)
+
+  var first_run = true 
   game.thread_loop(function(dt) {
     // update all the objects.
     Object.keys(CONTEXTS.Thread.objects).forEach(function(key) {
@@ -56,12 +61,14 @@ function worker_init(threads, all) {
       item.update && item.update(dt)
     })
 
-    var payload = CONTEXTS.Thread.create_update(CONTEXTS.RendererLoop)
+    var payload = CONTEXTS.Thread.create_update(CONTEXTS.RendererLoop, first_run)
     // send the data back up
     if(payload)
       postMessage({
         context:CONTEXTS.Thread.uuid
       , payload:payload
       })
+
+    first_run = false
   }, 33)
 }

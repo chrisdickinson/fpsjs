@@ -26,6 +26,13 @@ Input.events = {}
 
 Input.events.keydown = function(ev) {
   this.object['key_'+ev.keyCode] = true 
+
+  switch(ev.keyCode) { 
+  case 87: Z += 0.2; break;
+  case 65: X += 0.2; break;
+  case 83: Z -= 0.2; break;
+  case 68: X -= 0.2; break;
+  }
 }
 
 Input.events.keyup = function(ev) {
@@ -37,7 +44,7 @@ Input.events.mousemove = function(ev) {
   this.object['mouse_y'] = ev.movementY || ev.webkitMovementY || 0
 
   // automatically tell the camera to rotate.
-  this.camera.rotate(this.object['mouse_x'], this.object['mouse_y'])
+  R += this.object.mouse_x / 100
 }
 
 Input.events.mousedown = function(ev) {

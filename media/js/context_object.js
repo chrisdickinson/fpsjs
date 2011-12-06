@@ -25,18 +25,26 @@ function init() {
     self.__definition__.keys.forEach(function(attr, idx) {
       Object.defineProperty(self, attr, definition.define_property(idx))
     })
+
+    definition.proto(self)
   }
 
   ContextObject.get_inject = arguments.callee
 
   var proto = ContextObject.prototype
 
+  proto.pretty = function() {
+    var out = {}
+    out.constructor = new Function('return function '+this.__definition__.id+'(){}')()
+    for(var i = 0, keys = this.__definition__.keys, len = keys.length; i < len; ++i)
+      out[keys[i]] = this[keys[i]]
+    return out
+  }
+
   proto.send_update = function(full) {
     var out = [] 
       , self = this
       , last = -Infinity
-
-    full = full === undefined ? false : true
 
     var all = full ?
         Object.keys(self.__dirty__) :
