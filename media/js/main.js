@@ -14,7 +14,9 @@ function module(game, renderer, network) {
 
   var defs = init_definitions(Definition) 
 
-  Definition.define_authority(CONTEXTS)
+  CONTEXTS.Network.is_network = true
+  CONTEXTS.RendererLoop.is_renderer = true
+  CONTEXTS.Thread.is_thread = true
 
   network.init(Network, function() {
     var worker = new Worker('/media/js/worker.js')

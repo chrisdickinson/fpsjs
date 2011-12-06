@@ -8,20 +8,30 @@ if(typeof define !== 'undefined') {
 
 function init (def) {
 
-  var network_master = function(contexts) {
-    return [
-      [contexts.RendererLoop, contexts.Thread]
-    , [contexts.Thread, contexts.Network]
-    , [contexts.Network]  
-    ]
+
+  var network_master = function(query, target) {
+    // never send anything to the network
+    if(target.is_network) {
+      return false
+    }
+
+    // if the target is the thread, then we have to be the network
+    if(target.is_thread) {
+      return query.is_network
+    }
+
+    // if the target is the renderer, then we have to be the thread
+    if(target.is_renderer) {
+      return query.is_thread
+    }
+    return true
   }
 
-  var renderer_master = function(contexts) {
-    return [
-      [contexts.Network, contexts.RendererLoop]
-    , [contexts.Thread, contexts.RendererLoop]
-    , [contexts.RendererLoop]
-    ]
+  var renderer_master = function(query, target) {
+    if(target.is_network || target.is_thread) {
+      return query.is_renderer
+    }
+    return false
   }
 
   var Physics = new def('Physics', {

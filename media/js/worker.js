@@ -38,7 +38,9 @@ function worker_init(threads, all) {
   CONTEXTS.Network       = new Context(threads.SERVER_UUID)
   CONTEXTS.RendererLoop  = new Context(threads.CLIENT_UUID)
   CONTEXTS.Thread        = new Context(threads.THREAD_UUID)
-
+  CONTEXTS.Network.is_network = true
+  CONTEXTS.RendererLoop.is_renderer = true
+  CONTEXTS.Thread.is_thread = true
   Context.set(CONTEXTS.Thread)
 
   importScripts(
@@ -48,8 +50,6 @@ function worker_init(threads, all) {
   )
 
   init_definitions(Definition)
-
-  Definition.define_authority(CONTEXTS)
 
   CONTEXTS.Thread.recv_update(all, CONTEXTS.Network)
 
