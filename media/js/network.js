@@ -9,7 +9,7 @@ var proto = Network.prototype
 proto.init = function(context, ready) {
   this.context = context
 
-  this.socket = io.connect('http://localhost:8000')
+  this.socket = io.connect(location.protocol + '//' + location.host)
 
   var self = this
   this.socket.on('update', function() {
