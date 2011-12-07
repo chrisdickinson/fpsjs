@@ -429,7 +429,7 @@ proto.start = function(controlling_id, network, worker, all_data) {
   document.body.appendChild(elem)
 
   setInterval(function() {
-    elem.innerText = 'hey: '+(avg / samples).toFixed(2)+' between cycles; '+(update/samples).toFixed(2)+' creating updates'
+    elem.innerHTML = 'hey: '+(avg / samples).toFixed(2)+' between cycles; '+(update/samples).toFixed(2)+' creating updates'
   })
 
   requestAnimFrame(function iter() {
@@ -451,14 +451,6 @@ proto.start = function(controlling_id, network, worker, all_data) {
     if(player) {
       self.camera.rotate(0, 1, 0, player.r0)
       self.camera.translate(player.x, Y-4, player.z)
-    } else {
-      var warning = document.querySelector('#warning')
-      if(!warning) {
-        document.body.appendChild(warning = document.createElement('h1'))
-        warning.innerHTML = '<p id="warning"></p>'
-        warning = document.querySelector('#warning')
-      }
-      warning.innerText = 'NO PLAYER '+controlling
     }
     for(var i = 0, len = self.renderables.length; i < len; ++i) {
       self.renderables[i].render(self)
