@@ -33,6 +33,10 @@ function init() {
 
   var proto = ContextObject.prototype
 
+  proto.delete = function() {
+    this.__deleted__ = true
+  }
+
   proto.pretty = function() {
     var out = {}
     out.constructor = new Function('return function '+this.__definition__.id+'(){}')()
@@ -63,8 +67,8 @@ function init() {
       attrs[payload[i][0]] = payload[i][1]
     }
     // clear the dirt.
-    delete self.__dirty__
-    self.__dirty__ = {}
+    // delete self.__dirty__
+    // self.__dirty__ = {}
   }
 
   return ContextObject

@@ -25,7 +25,6 @@ onmessage = function(ev) {
   if(ev.data.init) {
     worker_init(ev.data.threads, ev.data.all)
   } else if(ev.data.context === CONTEXTS.Network.uuid) {
-    console.log(ev.data.payload)
     CONTEXTS.Thread.recv_update(ev.data.payload, CONTEXTS.Network)
   } else if(ev.data.context === CONTEXTS.RendererLoop.uuid) {
     CONTEXTS.Thread.recv_update(ev.data.payload, CONTEXTS.RendererLoop)
@@ -53,12 +52,24 @@ function worker_init(threads, all) {
 
   CONTEXTS.Thread.recv_update(all, CONTEXTS.Network)
 
-  var first_run = true 
+  var first_run = true
+    , game = new Game(Context.current())
+
+  var avg = 0
+    , samples = 0
+
+  //setInterval(function() {
+  //  console.log('avg dt: '+(avg/samples))
+  //}, 1000)
+
   game.thread_loop(function(dt) {
+    ++samples
+    avg += dt
+    
     // update all the objects.
     Object.keys(CONTEXTS.Thread.objects).forEach(function(key) {
       var item = CONTEXTS.Thread.objects[key]
-      item.update && item.update(dt)
+      item.update && item.update(game.context, dt)
     })
 
     var payload = CONTEXTS.Thread.create_update(CONTEXTS.RendererLoop, first_run)

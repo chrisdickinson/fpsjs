@@ -22,18 +22,24 @@ function module(game, renderer, network) {
     var worker = new Worker('/media/js/worker.js')
     renderer.init(worker, function() {
 
+      console.log('renderer init')
 
       // join the game... (update events will start being sent)
       network.send('join', threads, function(err, manifest, controlling_id, all_data) {
 
+        console.log('network join')
+
         // load the required data...
         renderer.load(manifest || {}, function() {
+
+          console.log('renderer loaded')
 
           // start the worker...
           threads.THREAD_UUID = CONTEXTS.Thread.uuid
           worker.postMessage({init:true, threads:threads, all:all_data})
 
           renderer.start(controlling_id, network, worker, all_data)
+          console.log('renderer start')
         })
       })
     })

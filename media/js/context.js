@@ -1,8 +1,14 @@
+var IN_NODE = false
+  , IN_WORKER = typeof importScripts !== 'undefined'
+
 if(typeof module === 'undefined') {
   // noop
 } else {
+  IN_NODE = true
   ContextObject = require('./context_object')
 }
+
+var DELETION_FLAG = -1
 
 function Context(uuid, definition_class) {
   this.uuid = uuid
@@ -80,12 +86,11 @@ Context.prototype.create_update = function(for_context, full) {
     def = item.__definition__
 
     deleted = item.__deleted__
-    if(def.is_authoritative(this, for_context) && item.__is_dirty__) {
+    if(def.is_authoritative(this, for_context)) {
       payload[all[i]] = deleted ? 
-          [item.__definition__.id, 'deleted'] : 
+          [item.__definition__.id, DELETION_FLAG] : 
           [item.__definition__.id, item.send_update()]
 
-      item.__is_dirty__ = false
       valid = true
     }
     if(deleted) {
@@ -97,25 +102,24 @@ Context.prototype.create_update = function(for_context, full) {
   return payload
 }
 
-var UP = 0
-
 Context.prototype.recv_update = function(payload, from_context) {
   for(var i = 0, all=Object.keys(payload), len = all.length, key; key = all[i], i < len; ++i) {
     var def = (this.definition_class || Definition).lookup(payload[key][0])
 
     // only apply updates from authoritative contexts.
-    if(!def) console.log(payload[key][0])
     if(from_context === this || def.is_authoritative(from_context, this)) {
-      console.log((from_context&&from_context.uuid)+': updating '+def.id, payload[key][1])
       if(!this.objects[key]) {
         // create a new object matching the incoming uuid, looking up the definition in the process
         this.recv_object(payload[key][0], key)
       }
-      if(payload[key][1] === 'delete') {
-        delete this.objects[key]
+      if(payload[key][1] === DELETION_FLAG) {
+        // mark for deletion. will be deleted on the next update.
+        this.objects[key].__deleted__ = true
       } else {
         this.objects[key].recv_update(payload[key][1], from_context)
       }
+    } else {
+      IN_WORKER && console.log('skipping ', payload[key][0])
     }
   }
 }

@@ -54,6 +54,11 @@ proto.init = function(worker, ready) {
           item.__renderer__ = true
         }
       }
+
+      // remove deleted renderables
+      self.renderables = self.renderables.filter(function(item) {
+        return !!CONTEXTS.RendererLoop.objects[item.__uuid__]
+      })
     } else if(ev.data.channel === 'log') {
       console.log.apply(console, ['THREAD'].concat(ev.data.data))
     } else if(ev.data.channel === 'error') {
@@ -402,7 +407,7 @@ Camera.prototype.translate = function(x, y, z) {
 X = Y = Z = R = 0
 proto.start = function(controlling_id, network, worker, all_data) {
 
-  var controlling = controlling_id ? Renderer.objects[controlling_id] : null
+  var controlling = controlling_id ? CONTEXTS.RendererLoop.objects[controlling_id] : null
     , self = this
 
   self.camera = new Camera(controlling, self.canvas)
@@ -413,14 +418,48 @@ proto.start = function(controlling_id, network, worker, all_data) {
     document.addEventListener(key, events[key])
   }
 
+  var now = Date.now()
+    , new_now
+    , avg = 0
+    , samples = 0
+    , dt
+    , update = 0
+
+  var elem = document.createElement('p')
+  document.body.appendChild(elem)
+
+  setInterval(function() {
+    elem.innerText = 'hey: '+(avg / samples).toFixed(2)+' between cycles; '+(update/samples).toFixed(2)+' creating updates'
+  })
+
   requestAnimFrame(function iter() {
+    controlling = controlling || (controlling_id ? CONTEXTS.RendererLoop.objects[controlling_id] : null)
+    var player = controlling && controlling.player_id && CONTEXTS.RendererLoop.objects[controlling.player_id]
+
+    new_now = Date.now()
+    dt = new_now - now
+    now = new_now
+
+    avg += dt
+    samples += 1
 
     // redraw ALL THE THINGS 
     self.clear()
 
     self.camera.push_state()
-    self.camera.rotate(0, 1, 0, R)
-    self.camera.translate(X, Y-4, Z)
+
+    if(player) {
+      self.camera.rotate(0, 1, 0, player.r0)
+      self.camera.translate(player.x, Y-4, player.z)
+    } else {
+      var warning = document.querySelector('#warning')
+      if(!warning) {
+        document.body.appendChild(warning = document.createElement('h1'))
+        warning.innerHTML = '<p id="warning"></p>'
+        warning = document.querySelector('#warning')
+      }
+      warning.innerText = 'NO PLAYER '+controlling
+    }
     for(var i = 0, len = self.renderables.length; i < len; ++i) {
       self.renderables[i].render(self)
     }
@@ -436,11 +475,11 @@ proto.start = function(controlling_id, network, worker, all_data) {
       network.send('update', payload)
     }
 
+    update += Date.now() - now
     requestAnimFrame(iter, canvas)
   }, canvas)
 
   network.on('update', function(payload) {
-    console.log('GOT UPDATE', CONTEXTS.Network.uuid, payload)
     worker.postMessage({
         context:CONTEXTS.Network.uuid
       , payload:payload

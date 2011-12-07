@@ -1,5 +1,5 @@
-function Game() {
-
+function Game(context) {
+  this.context = context
 }
 
 var proto = Game.prototype
@@ -18,9 +18,8 @@ proto.thread_loop = function(fn, interval) {
 }
 
 if(typeof define !== 'undefined') {
-  define(function() { return new Game })
+  define(function() { return Game })
 } else if(typeof module !== 'undefined') {
   module.exports = Game
 } else {
-  game = new Game
 }

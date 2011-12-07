@@ -14,7 +14,6 @@ proto.init = function(context, ready) {
   var self = this
   this.socket.on('update', function() {
     var args = [].slice.call(arguments)
-    console.log('listeners',self.listeners)
     ;(self.listeners.update || []).forEach(function(listener) {
       listener.apply(self, args)
     })
