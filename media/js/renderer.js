@@ -476,8 +476,8 @@ proto.start = function(controlling_id, network, worker, all_data) {
     }
 
     update += Date.now() - now
-    requestAnimFrame(iter, canvas)
-  }, canvas)
+    requestAnimFrame(iter, self.canvas)
+  }, self.canvas)
 
   network.on('update', function(payload) {
     worker.postMessage({
