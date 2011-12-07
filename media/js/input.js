@@ -11,6 +11,7 @@ function Input(object, controlling, camera) {
   this.object = object
   this.controlling = controlling
   this.camera = camera
+  this.mouselock = false
 }
 
 var proto = Input.prototype
@@ -33,8 +34,16 @@ Input.events.keyup = function(ev) {
 }
 
 Input.events.mousemove = function(ev) {
-  this.object['mouse_x'] += ev.movementX || ev.webkitMovementX || 0
-  this.object['mouse_y'] += ev.movementY || ev.webkitMovementY || 0
+  if(!this.mouselock) return
+
+  this.object.mouse_x += ev.movementX || ev.webkitMovementX || 0
+  this.object.mouse_y += ev.movementY || ev.webkitMovementY || 0
+}
+
+Input.events.mousewheel = function(ev) {
+  this.object.mouse_x += ev.wheelDeltaX / 100
+  this.object.mouse_y += ev.wheelDeltaY / 100
+  ev.preventDefault()
 }
 
 Input.events.mousedown = function(ev) {
