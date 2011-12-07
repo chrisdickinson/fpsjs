@@ -67,15 +67,20 @@ function init (def) {
     proto.renderable = true
 
     proto.render = function(renderer) {
+      var controlling = renderer.input.controlling()
+
+      if(controlling.player_id === this.__uuid__)
+        return
+
       var program = renderer.programs.wall_program
         , model = renderer.models.wall_model
-        , w     = 3
-        , h     = 3
+        , w     = 1 
+        , h     = 1
         , walign = w/2
         , halign = h/2
 
       renderer.camera.push_state()
-      renderer.camera.translate(-this.x, 2.0, -this.z) 
+      renderer.camera.translate(-this.x, 3.5, -this.z) 
       renderer.camera.scale(w, h, w)
       renderer.camera.rotate(0, 1, 0, this.r0)
       renderer.camera.translate(-0.5, -0.5, 0.0)
@@ -86,8 +91,8 @@ function init (def) {
       program.set_color([1.0,1.0,1.0])
       program.set_model_matrix(false, renderer.camera.model_matrix)
       program.set_projection_matrix(false, renderer.camera.projection_matrix)
-      program.set_texture('wall_texture_0', 0)
-      program.set_texture('wall_texture_0', 1)
+      program.set_texture('player_texture', 0)
+      program.set_texture('player_texture', 1)
       model.draw(renderer)
       renderer.camera.pop_state()
     }

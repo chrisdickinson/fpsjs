@@ -14,6 +14,6 @@ void main(void) {
       v_color[0] * base_texture.x ,//* detail_texture.x),
       v_color[1] * base_texture.y ,//* detail_texture.y),
       v_color[2] * base_texture.z ,//* detail_texture.z),
-      1.0);
+      base_texture.w);
 
 }

@@ -7,14 +7,18 @@ if(typeof define !== 'undefined') {
 }
 
 
-function Input(object, controlling, camera) {
+function Input(object, controlling_id, camera) {
   this.object = object
-  this.controlling = controlling
+  this.controlling_id = controlling_id
   this.camera = camera
   this.mouselock = false
 }
 
 var proto = Input.prototype
+
+proto.controlling = function() {
+  return CONTEXTS.RendererLoop.objects[this.controlling_id]
+}
 
 proto.events = function() {
   var self = this

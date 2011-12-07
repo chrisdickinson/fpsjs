@@ -65,9 +65,10 @@ proto.init = function(worker, ready) {
       console.error.apply(console, ['THREAD'].concat(ev.data.data))
     }
   }
+  self.ctxt.blendFunc(self.ctxt.SRC_ALPHA, self.ctxt.ONE_MINUS_SRC_ALPHA)
   self.ctxt.enable(self.ctxt.DEPTH_TEST)
   self.ctxt.disable(self.ctxt.CULL_FACE)
-
+  self.ctxt.enable(self.ctxt.BLEND)
   ready()
 }
 
@@ -411,7 +412,7 @@ proto.start = function(controlling_id, network, worker, all_data) {
     , self = this
 
   self.camera = new Camera(controlling, self.canvas)
-  self.input = new this.input_class(CONTEXTS.RendererLoop.create_object(Definition.all.Input), controlling, self.camera)
+  self.input = new this.input_class(CONTEXTS.RendererLoop.create_object(Definition.all.Input), controlling_id, self.camera)
 
   var events = this.input.events()
   for(var key in events) {
