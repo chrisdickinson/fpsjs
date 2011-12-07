@@ -69,18 +69,25 @@ function init (def) {
     proto.render = function(renderer) {
       var program = renderer.programs.wall_program
         , model = renderer.models.wall_model
+        , w     = 3
+        , h     = 3
+        , walign = w/2
+        , halign = h/2
 
       renderer.camera.push_state()
+      renderer.camera.translate(-this.x, 2.0, -this.z) 
+      renderer.camera.scale(w, h, w)
       renderer.camera.rotate(0, 1, 0, this.r0)
-      renderer.camera.translate(this.x, 0, -this.z)
-      renderer.camera.scale(5, 5, 1)
+      renderer.camera.translate(-0.5, -0.5, 0.0)
+      renderer.camera.rotate(0, 1, 0, -this.r0)
+      renderer.camera.translate(0.5, 0.5, 0.0)
+      renderer.camera.rotate(0, 1, 0, this.r0)
       program.enable()
       program.set_color([1.0,1.0,1.0])
       program.set_model_matrix(false, renderer.camera.model_matrix)
       program.set_projection_matrix(false, renderer.camera.projection_matrix)
       program.set_texture('wall_texture_0', 0)
       program.set_texture('wall_texture_0', 1)
-      //program.set_eye_position(renderer.camera.eye_position)
       model.draw(renderer)
       renderer.camera.pop_state()
     }
@@ -176,6 +183,7 @@ function init (def) {
         // we're controlling something.
         var dz = 0
           , dx = 0
+          , speed = 3
 
         if(input.key_87) {
           dz = 1
@@ -191,13 +199,16 @@ function init (def) {
         // update rotation and position.
         var rot = player.r0 = (input.mouse_x % 360) * Math.PI / 180 
 
+        dx *= speed
+        dz *= speed
+
         // update forward momentum
-        player.x += Math.cos(-rot) * (dz / dt) 
-        player.z += Math.sin(-rot) * (dz / dt)
+        player.x += Math.sin(-rot) * (dz / dt) 
+        player.z += Math.cos(-rot) * (dz / dt)
 
         // update sideways momentum
-        player.x += Math.sin(rot + Math.PI/2) * (dx / dt)
-        player.z += Math.cos(rot + Math.PI/2) * (dx / dt)
+        // player.x += Math.sin(rot + Math.PI/2) * (dx / dt)
+        // player.z += Math.cos(rot + Math.PI/2) * (dx / dt)
       } else {
       }
     }
