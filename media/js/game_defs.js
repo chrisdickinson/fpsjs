@@ -20,6 +20,14 @@ Array.prototype.sub = function(rhs) {
   })
 }
 
+Array.prototype.cross = function(rhs) {
+  return [
+      this[1]*rhs[2] - this[2]*rhs[1]
+    , this[2]*rhs[0] - this[0]*rhs[2]
+    , this[0]*rhs[1] - this[1]*rhs[0]
+  ]
+}
+
 function init (def) {
 
 
@@ -253,20 +261,31 @@ function init (def) {
 
           for(var i = 0, len = walls.length; i < len; ++i) {
             var wall = walls[i]
-              , normal = wall.normal || (wall.normal = [
-                  wall.w * Math.sin(-wall.r0) - wall.x
-                , wall.h
-                , wall.w * Math.cos(-wall.r0) - wall.y
-                ])
-              , distance = ([-wall.x, 2.5, -wall.y].sub([x, 2.5, z]).dot(normal)) / ([vecx, 0.0, vecz].dot(normal))
+              , normal = wall.normal || (function() {
+                  var x = [
+                        wall.w * Math.sin(-wall.r0) - wall.x
+                      , 0
+                      , wall.w * Math.cos(-wall.r0) - wall.y
+                    ]
+                    , y = [ 
+                        0
+                      , wall.h
+                      , 0
+                    ]
+                    , normal = x.cross(y)
 
+                    return normal
+                })()
+              , distance = ([wall.x, 2.5, wall.y].sub([x, 2.5, z]).dot(normal)) / ([vecx, 0.0, vecz].dot(normal))
+
+            wall.normal = wall.normal || normal
             if(distance >= 0 && distance < magnitude) {
               vecx = vecx / magnitude * distance
               vecz = vecz / magnitude * distance
 
               break
             } else {
-              //context.is_thread && console.log(i, distance, x, z, wall.x, wall.y)
+              context.is_thread && console.log(i, distance, x, z, wall.x, wall.y)
             }
           }
           player.x = x + vecx
