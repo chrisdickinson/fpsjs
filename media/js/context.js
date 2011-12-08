@@ -27,23 +27,12 @@ Context.prototype.create_object = function(definition) {
 
   obj = new ContextObject(definition, uuid)
   this.objects[uuid] = obj
-
-  // automatically set new objects as "dirty"
-  obj.__definition__.keys.forEach(function(key) {
-    obj[key] = obj[key]
-  })
   return obj
 }
 
 Context.prototype.recv_object = function(definition_id, uuid) {
   obj = new ContextObject((this.definition_class || Definition).lookup(definition_id), uuid)
   this.objects[uuid] = obj
-
-  // automatically set new objects as "dirty"
-  obj.__definition__.keys.forEach(function(key) {
-    obj[key] = obj[key]
-  })
-
   return obj
 }
 
@@ -122,6 +111,16 @@ Context.prototype.recv_update = function(payload, from_context) {
       IN_WORKER && console.log('skipping ', payload[key][0])
     }
   }
+}
+
+Context.prototype.find = function(name) {
+  var self = this
+    , out = []
+  Object.keys(self.objects).forEach(function(key) {
+    if(self.objects[key].__definition__.id === name)
+      out.push(self.objects[key])
+  })
+  return out
 }
 
 Context.current = function() {

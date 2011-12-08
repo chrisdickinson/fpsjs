@@ -8,6 +8,18 @@ if(typeof define !== 'undefined') {
   init_definitions = init
 }
 
+Array.prototype.dot = function(rhs) {
+  return this.map(function(item, idx) {
+    return item * rhs[idx]
+  }).reduce(function(lhs, rhs) { return lhs + rhs }, 0)
+}
+
+Array.prototype.sub = function(rhs) {
+  return this.map(function(item, idx) {
+    return item - rhs[idx]
+  })
+}
+
 function init (def) {
 
 
@@ -103,7 +115,11 @@ function init (def) {
       player_id   : 0
     , state       : 'initial'   // of ['initial', 'fly', 'explode'] 
     , kind        : 'projectiles.Bullet' 
-    , physics_id  : 0
+    , r0          : 0
+    , x           : 0
+    , y           : 0
+    , dx          : 0
+    , dy          : 0
   })
 
   Projectile.define_authority(network_master)
@@ -135,8 +151,8 @@ function init (def) {
         , model = renderer.models[this.model]
 
       renderer.camera.push_state()
+      renderer.camera.translate(-this.x, 0, -this.y)
       renderer.camera.rotate(0, 1, 0, this.r0)
-      renderer.camera.translate(this.x, 0, -this.y)
       renderer.camera.scale(this.w, this.h, this.w/this.h) 
       program.enable()
 
@@ -169,6 +185,19 @@ function init (def) {
 
   Input.define_authority(renderer_master)
 
+  Input.set_proto(function(proto) {
+    var initial_update = proto.recv_update
+
+    proto.recv_update = function(payload) {
+      var original_click = this.mouse_0
+        , new_click
+
+      initial_update.call(this, payload)
+
+    }
+
+  })
+
   var Control = new def('Control', {
       input_id    : 0
     , player_id   : 0
@@ -184,7 +213,7 @@ function init (def) {
       var input = context.objects[this.input_id]
         , player = context.objects[this.player_id]
 
-      if(input && player) {
+      if(input && player && player.health > 0) {
         // we're controlling something.
         var dz = 0
           , dx = 0
@@ -203,18 +232,98 @@ function init (def) {
 
         // update rotation and position.
         var rot = player.r0 = (input.mouse_x % 360) * Math.PI / 180 
+          , vecx
+          , vecz
+          , walls
+          , x = player.x
+          , z = player.z
+          , magnitude
+
+        walls = context.find('Wall')
 
         dx *= speed
         dz *= speed
 
-        // update forward momentum
-        player.x += Math.sin(-rot) * (dz / dt) 
-        player.z += Math.cos(-rot) * (dz / dt)
+        if(dz > 0) {
+          // update forward momentum
+          vecx = Math.sin(-rot) * (dz / dt) 
+          vecz = Math.cos(-rot) * (dz / dt)
+
+          magnitude = Math.sqrt(vecx*vecx + vecz*vecz)
+
+          for(var i = 0, len = walls.length; i < len; ++i) {
+            var wall = walls[i]
+              , normal = wall.normal || (wall.normal = [
+                  wall.w * Math.sin(-wall.r0) - wall.x
+                , wall.h
+                , wall.w * Math.cos(-wall.r0) - wall.y
+                ])
+              , distance = ([-wall.x, 2.5, -wall.y].sub([x, 2.5, z]).dot(normal)) / ([vecx, 0.0, vecz].dot(normal))
+
+            if(distance >= 0 && distance < magnitude) {
+              vecx = vecx / magnitude * distance
+              vecz = vecz / magnitude * distance
+
+              break
+            } else {
+              //context.is_thread && console.log(i, distance, x, z, wall.x, wall.y)
+            }
+          }
+          player.x = x + vecx
+          player.z = z + vecz 
+        }
+
 
         // update sideways momentum
         // player.x += Math.sin(rot + Math.PI/2) * (dx / dt)
         // player.z += Math.cos(rot + Math.PI/2) * (dx / dt)
-      } else {
+        var new_mouse_0 = input.mouse_0
+          , old_mouse_0 = input.old_mouse_0 || false
+
+        // uh oh, we're firing our LAZER CANNON
+        if(IN_NODE && new_mouse_0 != old_mouse_0) {
+          if(!new_mouse_0) {
+            // mouse up
+             
+          } else {
+            // mouse down
+            var projectile = context.create_object(Projectile)
+              , dx = Math.sin(-rot) * 100
+              , dz = Math.cos(-rot) * 100
+
+            projectile.x = player.x + dx / 100
+            projectile.z = player.z + dz / 100
+            projectile.r0 = rot
+
+
+          }
+        }
+        input.old_mouse_0 = new_mouse_0
+
+      } else if(input) {
+        var new_mouse_0 = input.mouse_0
+          , old_mouse_0 = input.old_mouse_0 || false
+
+        // mark the old player object (if any) for deletion
+        player && player.delete()
+
+        // if we're transitioning from mouse down to mouse up,
+        // spawn the player.
+        if(new_mouse_0 != old_mouse_0 && !new_mouse_0 && IN_NODE) {
+          var player = context.create_object(Player)
+            , spawns = context.find('Spawnpoint')
+            , spawn = spawns[~~(Math.random() * (spawns.length-1))]
+
+          if(spawn) {
+            player.x = spawn.x
+            player.z = spawn.y
+            player.r0 = spawn.r0
+          }
+
+          this.player_id = player.__uuid__
+        }
+
+        input.old_mouse_0 = new_mouse_0
       }
     }
   })
