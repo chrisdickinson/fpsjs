@@ -1,0 +1,67 @@
+<!doctype html>
+
+<meta charset="utf8">
+
+<title>FPS.js</title>
+<script type="text/javascript">
+  threads = {
+    SERVER_UUID:'lol'
+  , CLIENT_UUID:'rofl'
+  }
+</script>
+<link rel="stylesheet" href="/media/css/bootstrap.css" />
+<script type="text/javascript" src="/media/js/lightgl.js"></script>
+<script type="text/javascript" src="/media/js/csg.js"></script>
+
+<h1>level editor</h1>
+<ul class="toolbar">
+    <li><a href="#mode">Subtract</a>
+    <li><a href="#sphere">Sphere</a>
+    <li><a href="#cube">Cube</a>
+    <li><a href="#cylinder">Cylinder</a>
+</ul>
+
+<div class="grid">
+    <div class="top">
+        <div id="topleft">
+            <canvas class="canvas" id="view_x" width="0" height="0"></canvas>
+        </div>
+        <div id="topright">
+            <canvas class="canvas" id="view_y" width="0" height="0"></canvas>
+        </div>
+    </div>
+    <div class="bottom">
+        <div id="botleft">
+            <canvas id="view_3d" width="0" height="0"></canvas>
+        </div>
+        <div id="botright">
+            <canvas class="canvas" id="view_z" width="0" height="0"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    var children = [].slice.call(document.querySelectorAll('.grid > div > div'))
+      , rows = document.querySelectorAll('.grid > div')
+      , tbh = document.querySelector('.toolbar').clientHeight + 4 
+      , hh = document.querySelector('body>h1').clientHeight + 8
+      , _on_resize = function(){}
+      , on_resize = function(fn) { _on_resize = fn }
+      , resize = function() {
+        var h = window.innerHeight - tbh - hh 
+          , w = window.innerWidth - 8
+        children.forEach(function(child) {
+            child.style.height = h/2+'px'; 
+            var cvs = child.querySelector('canvas')
+            cvs.height = h/2 - 2 
+            cvs.width = w/2 - 8 
+        })
+        _on_resize()
+      }
+
+    resize()
+    setTimeout(function() { resize() }, 10)
+    window.onresize = resize 
+
+</script>
+<script type="text/javascript" src="/media/js/editor.js"></script>
