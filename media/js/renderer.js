@@ -32,6 +32,37 @@ function Renderer(input_class) {
 var proto = Renderer.prototype
 
 
+var sampler = function(name, point) {
+  var now = Date.now()
+    , new_now
+    , dt = 0 
+    , samples = 0
+    , avg = 0
+
+  var ret = function() {
+    new_now = Date.now()
+    dt = new_now - now
+    now = new_now
+    ++samples
+    avg += dt
+    return dt
+  }
+
+  function pad(str) {
+    str += ':'
+    while(str.length < 10)
+      str += ' '
+    return str
+  }
+  name = pad(name)
+
+  ret.avg = function() {
+    return name + (avg / samples).toFixed(point || 2)+' (samples:'+samples+')' 
+  }
+
+  return ret
+}
+
 proto.init = function(worker, ready) {
 
   var self = this
@@ -419,30 +450,21 @@ proto.start = function(controlling_id, network, worker, all_data) {
     document.addEventListener(key, events[key])
   }
 
-  var now = Date.now()
-    , new_now
-    , avg = 0
-    , samples = 0
-    , dt
-    , update = 0
-
-  var elem = document.createElement('p')
+  var dt
+    , fps = sampler('ms/frame')
+    , net = sampler('ms/net')
+  var elem = document.createElement('pre')
   document.body.appendChild(elem)
 
   setInterval(function() {
-    elem.innerHTML = 'hey: '+(avg / samples).toFixed(2)+' between cycles; '+(update/samples).toFixed(2)+' creating updates'
-  })
+    elem.innerHTML = fps.avg() + '\n' + net.avg()
+  }, 100)
+
 
   requestAnimFrame(function iter() {
     controlling = controlling || (controlling_id ? CONTEXTS.RendererLoop.objects[controlling_id] : null)
     var player = controlling && controlling.player_id && CONTEXTS.RendererLoop.objects[controlling.player_id]
-
-    new_now = Date.now()
-    dt = new_now - now
-    now = new_now
-
-    avg += dt
-    samples += 1
+    dt = fps()
 
     // redraw ALL THE THINGS 
     self.clear()
@@ -468,11 +490,11 @@ proto.start = function(controlling_id, network, worker, all_data) {
       network.send('update', payload)
     }
 
-    update += Date.now() - now
     requestAnimFrame(iter, self.canvas)
   }, self.canvas)
 
   network.on('update', function(payload) {
+    net()
     worker.postMessage({
         context:CONTEXTS.Network.uuid
       , payload:payload
