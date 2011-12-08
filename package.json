@@ -1,0 +1,21 @@
+{
+    "name": "fpsjs",
+    "version":"0.0.1",
+    "description": "A networked doom clone game engine thing.",
+    "keywords": [ 
+        "game",
+        "fps"
+    ],
+    "dependencies" : {
+        "paperboy" : "0.X.X",
+        "plate"    : "0.X.X",
+        "socket.io": "0.X.X",
+        "node-uuid": "1.X.X"
+    },
+    "author":"Chris Dickinson",
+    "directories":{"lib":"./lib"},
+    "license": [
+        "MIT"
+    ],
+    "main":"./index"
+}
