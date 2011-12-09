@@ -8,6 +8,17 @@ if(typeof define !== 'undefined') {
   init_definitions = init
 }
 
+Array.prototype.magnitude = function() {
+  return Math.sqrt(this[0]*this[0] + this[1]*this[1] + this[2]*this[2])
+}
+
+Array.prototype.normalize = function() {
+  var sqrt = this.magnitude()
+  return this.map(function(item) {
+    return item / sqrt
+  })
+}
+
 Array.prototype.dot = function(rhs) {
   return this.map(function(item, idx) {
     return item * rhs[idx]
@@ -225,7 +236,7 @@ function init (def) {
         // we're controlling something.
         var dz = 0
           , dx = 0
-          , speed = 3
+          , speed = 10 
 
         if(input.key_87) {
           dz = 1
@@ -252,20 +263,23 @@ function init (def) {
         dx *= speed
         dz *= speed
 
-        if(dz > 0) {
+
+        var FIX_FLOAT_HINKINESS = 10
+
+        if(dz !== 0) {
           // update forward momentum
           vecx = Math.sin(-rot) * (dz / dt) 
           vecz = Math.cos(-rot) * (dz / dt)
 
-          magnitude = Math.sqrt(vecx*vecx + vecz*vecz)
+          magnitude = speed / dt
 
           for(var i = 0, len = walls.length; i < len; ++i) {
             var wall = walls[i]
               , normal = wall.normal || (function() {
                   var x = [
-                        wall.w * Math.sin(-wall.r0) - wall.x
+                        wall.w * Math.cos(-wall.r0)
                       , 0
-                      , wall.w * Math.cos(-wall.r0) - wall.y
+                      , wall.w * Math.sin(-wall.r0)
                     ]
                     , y = [ 
                         0
@@ -273,19 +287,52 @@ function init (def) {
                       , 0
                     ]
                     , normal = x.cross(y)
-
-                    return normal
+                    return normal.normalize()
                 })()
-              , distance = ([wall.x, 2.5, wall.y].sub([x, 2.5, z]).dot(normal)) / ([vecx, 0.0, vecz].dot(normal))
 
             wall.normal = wall.normal || normal
-            if(distance >= 0 && distance < magnitude) {
-              vecx = vecx / magnitude * distance
-              vecz = vecz / magnitude * distance
+      
+            // skip any wall we're facing away from. 
+            if(wall.normal.dot([vecx, 0, vecz]) / magnitude > 0)
+              continue 
 
+            var distance = ([
+                  wall.x
+                , 0.0
+                , wall.y
+              ].sub([
+                  x
+                , 2.5
+                , z
+              ]).dot(normal)) / ([
+                  vecx*FIX_FLOAT_HINKINESS
+                , 0.0
+                , vecz*FIX_FLOAT_HINKINESS
+              ].dot(normal))
+
+            if(0 < distance && distance < magnitude) {
+              var v = [vecx, 0, vecz].normalize()
+                , new_vecx = v[0] * distance
+                , new_vecz = v[2] * distance
+                , new_point = [x + new_vecx, 0, z + new_vecz]
+                , origin_to_new_point = new_point.sub([wall.x, 0, wall.y])
+                , to_corner = [-Math.cos(-wall.r0), 0, -Math.sin(-wall.r0)]
+                , dotted = origin_to_new_point.dot(to_corner)       // gives |origin_to_new_point| * cos(theta), if it's negative it's in the opposite direction
+
+              if(dotted < 0) {
+                continue
+              }
+
+              var off_mag = origin_to_new_point.magnitude()
+              if(off_mag > wall.w) {
+                continue
+              }
+
+              // oh, a collision happened.
+              // how sweet of you to notice.
+              vecx = v[0] * distance
+              vecz = v[2] * distance
               break
-            } else {
-              context.is_thread && console.log(i, distance, x, z, wall.x, wall.y)
             }
           }
           player.x = x + vecx
