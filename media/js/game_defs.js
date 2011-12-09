@@ -238,15 +238,28 @@ function init (def) {
           , dx = 0
           , speed = 10 
 
+
+        var base_rotation = 0
+          , moving = false
+
         if(input.key_87) {
           dz = 1
+          base_rotation = Math.PI * 2
+          moving = true
         } else if(input.key_83) {
           dz = -1
-        } else if(input.key_65) {
+          base_rotation = Math.PI
+          moving = true
+        } 
+  
+        if(input.key_65) {
           dx = -1
+          base_rotation = moving ? base_rotation == Math.PI ? base_rotation + Math.PI/4 : base_rotation - Math.PI/4 : -Math.PI/2
+          moving = true
         } else if(input.key_68) {
           dx = 1
-        } else {
+          base_rotation = moving ? base_rotation == Math.PI ? base_rotation - Math.PI/4 : base_rotation + Math.PI/4 : Math.PI/2
+          moving = true
         }
 
         // update rotation and position.
@@ -266,10 +279,12 @@ function init (def) {
 
         var FIX_FLOAT_HINKINESS = 10
 
-        if(dz !== 0) {
-          // update forward momentum
-          vecx = Math.sin(-rot) * (dz / dt) 
-          vecz = Math.cos(-rot) * (dz / dt)
+        if(moving) {
+          rot = rot + base_rotation
+
+          // update momentum
+          vecx = Math.sin(-rot) * (speed / dt)
+          vecz = Math.cos(-rot) * (speed / dt)
 
           magnitude = speed / dt
 
