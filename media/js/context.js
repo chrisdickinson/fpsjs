@@ -20,6 +20,12 @@ function Context(uuid, definition_class) {
   this.definition_class = definition_class
 }
 
+Context.prototype.clean = function() {
+  for(var key in this.objects) {
+    this.objects[key].__dirty__ = {}
+  }
+}
+
 Context.prototype.create_object = function(definition) {
   var id = ++this.id_counter
     , uuid = this.uuid+':'+id
@@ -76,9 +82,14 @@ Context.prototype.create_update = function(for_context, full) {
 
     deleted = item.__deleted__
     if(def.is_authoritative(this, for_context)) {
-      payload[all[i]] = deleted ? 
-          [item.__definition__.id, DELETION_FLAG] : 
-          [item.__definition__.id, item.send_update()]
+      if(deleted) {
+        payload[all[i]] = [item.__definition__.id, DELETION_FLAG]
+      } else {
+        var item_update = item.send_update()
+        if(item_update.length) {
+          payload[all[i]] = [item.__definition__.id, item_update]
+        }
+      }
 
       valid = true
     }

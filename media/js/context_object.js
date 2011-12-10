@@ -44,8 +44,8 @@ function init() {
       , self = this
 
     var all = full ?
-        Object.keys(self.__dirty__) :
-        Object.keys(self.__attrs__)
+        Object.keys(self.__attrs__) :
+        Object.keys(self.__dirty__)
 
     for(var i = 0, other = self.__attrs__, len = all.length; i < len; ++i) {
       out.push([all[i], other[all[i]]])
@@ -55,8 +55,11 @@ function init() {
  
   proto.recv_update = function(payload) {
     var self = this
+      , dirt = this.__dirty__
+
     for(var i = 0, attrs = self.__attrs__, len = payload.length; i < len; ++i) {
       attrs[payload[i][0]] = payload[i][1]
+      dirt[payload[i][0]] = true
     }
   }
 
