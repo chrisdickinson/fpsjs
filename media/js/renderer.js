@@ -543,7 +543,9 @@ proto.start = function(controlling_id, network, worker, all_data) {
           context:CONTEXTS.RendererLoop.uuid
         , payload:payload
       })
+
       network.send('update', payload)
+      CONTEXTS.RendererLoop.clean()
     }
 
     requestAnimFrame(iter, self.canvas)

@@ -84,14 +84,15 @@ Context.prototype.create_update = function(for_context, full) {
     if(def.is_authoritative(this, for_context)) {
       if(deleted) {
         payload[all[i]] = [item.__definition__.id, DELETION_FLAG]
+        valid = true
       } else {
         var item_update = item.send_update()
         if(item_update.length) {
           payload[all[i]] = [item.__definition__.id, item_update]
+          valid = true
         }
       }
 
-      valid = true
     }
     if(deleted) {
       delete this.objects[all[i]]
