@@ -110,6 +110,56 @@ proto.clear = function() {
   // eeeh.
 }
 
+proto.load_text = function(key, str, ready) {
+  var gl = this.ctxt
+    , subcanvas = document.createElement('canvas')
+    , ctxt = subcanvas.getContext('2d')
+    , metrics
+    , image
+    , self = this
+
+  ctxt.fillStyle = 'white'
+  ctxt.strokeStyle = 'rgba(0, 0, 0, 0.5)'
+  ctxt.font = 'bold 20px monospace'
+
+  metrics = ctxt.measureText(str)
+
+  subcanvas.width = metrics.width || 100
+  subcanvas.height = 30 
+
+  ctxt.fillStyle = 'white'
+  ctxt.strokeStyle = 'rgba(0, 0, 0, 0.5)'
+  ctxt.font = 'bold 20px monospace'
+  ctxt.fillText(str, 0, 25)
+
+  ctxt.fillStyle = 'white'
+  ctxt.strokeStyle = 'rgba(0, 0, 0, 0.5)'
+  ctxt.font = 'bold 20px monospace'
+  ctxt.strokeText(str, 0, 25)
+
+  image = new Image(subcanvas.toDataURL('image/png'))
+
+  image.onload = function() {
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image)
+    
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mipmapped ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR)
+
+    texture.use = function(on_tmu, as) {
+      gl.activeTexture(gl['TEXTURE'+(on_tmu||0)])
+      gl.bindTexture(gl.TEXTURE_2D, texture)
+      gl.uniform1i(as, on_tmu||0)
+    }
+
+    self.textures[key] = texture
+    ready()
+  }
+ 
+  return ctxt
+}
+
 proto.load_texture = function(key, value, ready) {
 
   var self = this
