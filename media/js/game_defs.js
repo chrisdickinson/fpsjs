@@ -117,7 +117,7 @@ function init (def) {
       renderer.camera.translate(-0.5, -0.5, 0.0)
       renderer.camera.rotate(0, 1, 0, -this.r0)
       renderer.camera.translate(0.5, 0.5, 0.0)
-      renderer.camera.rotate(0, 1, 0, this.r0)
+      renderer.camera.rotate(0, 1, 0, this.r0+Math.PI/2)
       program.enable()
       program.set_color([1.0,1.0,1.0])
       program.set_model_matrix(false, renderer.camera.model_matrix)
@@ -228,6 +228,63 @@ function init (def) {
 
   var CHECK = 0
   Control.set_proto(function(proto) {
+    proto.renderable = true
+
+    var created_name = false
+    proto.render = function(renderer) {
+      var controlling = renderer.input.controlling()
+        , controlling_player = CONTEXTS.RendererLoop.objects[controlling.player_id]
+        , texture
+        , name = 'text:'+this.handle
+
+      if(controlling === this || !controlling_player)
+        return
+
+      if(!(texture=renderer.textures[name])) {
+        if(!created_name) {
+          created_name = true
+          renderer.load_text(name, this.handle, function() {
+            created_name = false // reset in case handle changes later.
+          })
+        }
+        return
+      }
+
+      if(!this.player_id)
+        return
+
+      // ooo, spooky action at a distance, hey?
+      var ctxt = CONTEXTS.RendererLoop
+        , player = ctxt.objects[this.player_id]
+
+      if(!player)
+        return
+
+      var program = renderer.programs.billboard_program
+        , model = renderer.models.wall_model
+        , gl = renderer.ctxt
+
+
+
+      renderer.camera.push_state()
+      renderer.camera.translate(-player.x, 4.5, -player.z) 
+      renderer.camera.rotate(0, 1, 0, player.r0)
+      renderer.camera.translate(-0.5, -0.5, 0.0)
+      renderer.camera.rotate(0, 1, 0, -player.r0)
+      renderer.camera.translate(0.5, 0.5, 0.0)
+      renderer.camera.rotate(0, 1, 0, -controlling_player.r0)
+      program.enable()
+
+      program.set_model_matrix(false, renderer.camera.model_matrix)
+      program.set_projection_matrix(false, renderer.camera.projection_matrix)
+      program.set_texture(name, 0)
+      program.set_texture(name, 1)
+      model.draw(renderer)
+      renderer.camera.pop_state()
+
+    }
+
+
     proto.update = function(context, dt) {
       var input = context.objects[this.input_id]
         , player = context.objects[this.player_id]

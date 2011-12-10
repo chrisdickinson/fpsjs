@@ -114,9 +114,11 @@ proto.load_text = function(key, str, ready) {
   var gl = this.ctxt
     , subcanvas = document.createElement('canvas')
     , ctxt = subcanvas.getContext('2d')
+    , texture = gl.createTexture()
     , metrics
     , image
     , self = this
+    , src
 
   ctxt.fillStyle = 'white'
   ctxt.strokeStyle = 'rgba(0, 0, 0, 0.5)'
@@ -124,8 +126,17 @@ proto.load_text = function(key, str, ready) {
 
   metrics = ctxt.measureText(str)
 
-  subcanvas.width = metrics.width || 100
-  subcanvas.height = 30 
+  var width = metrics.width || 128
+  if(! (width & (width - 1)) === 0) {
+    --width
+    for(var i = 0; i < 32; i <<= 1) {
+      width = width | width >> i
+    }
+    width += 1
+  }
+
+  subcanvas.width = width
+  subcanvas.height = width
 
   ctxt.fillStyle = 'white'
   ctxt.strokeStyle = 'rgba(0, 0, 0, 0.5)'
@@ -137,27 +148,22 @@ proto.load_text = function(key, str, ready) {
   ctxt.font = 'bold 20px monospace'
   ctxt.strokeText(str, 0, 25)
 
-  image = new Image(subcanvas.toDataURL('image/png'))
-
-  image.onload = function() {
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
-    gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image)
-    
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mipmapped ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR)
-
-    texture.use = function(on_tmu, as) {
-      gl.activeTexture(gl['TEXTURE'+(on_tmu||0)])
-      gl.bindTexture(gl.TEXTURE_2D, texture)
-      gl.uniform1i(as, on_tmu||0)
-    }
-
-    self.textures[key] = texture
-    ready()
-  }
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+  gl.bindTexture(gl.TEXTURE_2D, texture)
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, subcanvas)
  
-  return ctxt
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+  texture.use = function(on_tmu, as) {
+    gl.activeTexture(gl['TEXTURE'+(on_tmu||0)])
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.uniform1i(as, on_tmu||0)
+  }
+
+  self.textures[key] = texture
+  ready()
 }
 
 proto.load_texture = function(key, value, ready) {
