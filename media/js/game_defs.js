@@ -8,6 +8,14 @@ if(typeof define !== 'undefined') {
   init_definitions = init
 }
 
+Array.prototype.scale = function(x) {
+  return [
+      this[0] * x
+    , this[1] * x
+    , this[2] * x
+  ]
+}
+
 Array.prototype.magnitude = function() {
   return Math.sqrt(this[0]*this[0] + this[1]*this[1] + this[2]*this[2])
 }
@@ -23,6 +31,12 @@ Array.prototype.dot = function(rhs) {
   return this.map(function(item, idx) {
     return item * rhs[idx]
   }).reduce(function(lhs, rhs) { return lhs + rhs }, 0)
+}
+
+Array.prototype.add = function(rhs) {
+  return this.map(function(item, idx) {
+    return item + rhs[idx]
+  })
 }
 
 Array.prototype.sub = function(rhs) {
@@ -293,7 +307,7 @@ function init (def) {
         // we're controlling something.
         var dz = 0
           , dx = 0
-          , speed = 10 
+          , speed = 9.9 
 
 
         var base_rotation = 0
@@ -334,92 +348,102 @@ function init (def) {
         dz *= speed
 
 
-        var FIX_FLOAT_HINKINESS = 10
+
+        var PLZWRAP = true 
+          , ret = function(x) { return x }
+
+        var GAMMA   = 1000
+          , wrap    = PLZWRAP ? function(x) { return ~~(x * GAMMA) } : ret
+          , unwrap  = PLZWRAP ? function(x) { return (x / GAMMA) } : ret
+          , EPSILON = wrap(10e-1)
+
 
         if(moving) {
           rot = rot + base_rotation
 
           // update momentum
-          vecx = Math.sin(-rot) * (speed / dt)
-          vecz = Math.cos(-rot) * (speed / dt)
+          vecx = wrap(Math.sin(-rot) * (speed / dt))
+          vecz = wrap(Math.cos(-rot) * (speed / dt))
 
-          magnitude = speed / dt
+          x = wrap(x)
+          z = wrap(z)
+
+          magnitude = [vecx, 0, vecz].magnitude()
 
           for(var i = 0, len = walls.length; i < len; ++i) {
             var wall = walls[i]
               , normal = wall.normal || (function() {
                   var x = [
-                        wall.w * Math.cos(-wall.r0)
+                        wrap(wall.w * Math.cos(-wall.r0))
                       , 0
-                      , wall.w * Math.sin(-wall.r0)
+                      , wrap(wall.w * Math.sin(-wall.r0))
                     ]
                     , y = [ 
                         0
-                      , wall.h
+                      , wrap(wall.h)
                       , 0
                     ]
                     , normal = x.cross(y)
                     return normal.normalize()
                 })()
-
+              , wall_offset = wall.offset || (function() {
+                  return normal.dot([wrap(wall.x), 0, wrap(wall.y)])
+                })()
             wall.normal = wall.normal || normal
-      
+            wall.offset = wall.offset || wall_offset
+
             // skip any wall we're facing away from. 
-            if(wall.normal.dot([vecx, 0, vecz]) / magnitude > 0)
+            if(wall.normal.dot([vecx, 0, vecz]) / magnitude > 0) {
               continue 
+            }
 
-            var distance = ([
-                  wall.x
-                , 0.0
-                , wall.y
-              ].sub([
-                  x
-                , 2.5
-                , z
-              ]).dot(normal)) / ([
-                  vecx*FIX_FLOAT_HINKINESS
-                , 0.0
-                , vecz*FIX_FLOAT_HINKINESS
-              ].dot(normal))
+            var distance = wall.normal.dot([x, wrap(2.5), z].add([vecx, 0, vecz])) - wall.offset
 
-            if(0 < distance && distance < magnitude) {
+            if(Math.abs(distance) < EPSILON)
+              distance = 0
+
+            if(0 <= distance && distance <= magnitude) {
               var v = [vecx, 0, vecz].normalize()
+                , target_point = [vecx, 0, vecz].add([x, 0, z])
                 , new_vecx = v[0] * distance
                 , new_vecz = v[2] * distance
                 , new_point = [x + new_vecx, 0, z + new_vecz]
-                , origin_to_new_point = new_point.sub([wall.x, 0, wall.y])
+                , origin_to_new_point = new_point.sub([wrap(wall.x), 0, wrap(wall.y)])
                 , to_corner = [-Math.cos(-wall.r0), 0, -Math.sin(-wall.r0)]
                 , dotted = origin_to_new_point.dot(to_corner)       // gives |origin_to_new_point| * cos(theta), if it's negative it's in the opposite direction
 
               if(dotted < 0) {
+                // outside the rotating edge of the wall 
                 continue
               }
 
               var off_mag = origin_to_new_point.magnitude()
-              if(off_mag > wall.w) {
+              if(off_mag > wrap(wall.w)) {
+                // outside the width of the wall
                 continue
               }
 
+              var target_dist   = target_point.sub([x, 0, z].add([new_vecx, 0, new_vecz])).dot(wall.normal)
+                , plane_target  = target_point.sub(normal.normalize().scale(target_dist)) 
+
               // oh, a collision happened.
               // how sweet of you to notice.
-              vecx = v[0] * distance
-              vecz = v[2] * distance
-              break
+              vecx = plane_target[0] - x
+              vecz = plane_target[2] - z
+
+              magnitude = [vecx, 0, vecz].magnitude()
             }
           }
-          player.x = x + vecx
-          player.z = z + vecz 
+          player.x = unwrap(x + vecx)
+          player.z = unwrap(z + vecz) 
         }
 
 
-        // update sideways momentum
-        // player.x += Math.sin(rot + Math.PI/2) * (dx / dt)
-        // player.z += Math.cos(rot + Math.PI/2) * (dx / dt)
         var new_mouse_0 = input.mouse_0
           , old_mouse_0 = input.old_mouse_0 || false
 
         // uh oh, we're firing our LAZER CANNON
-        if(IN_NODE && new_mouse_0 != old_mouse_0) {
+        if(false && IN_NODE && new_mouse_0 != old_mouse_0) {
           if(!new_mouse_0) {
             // mouse up
              
