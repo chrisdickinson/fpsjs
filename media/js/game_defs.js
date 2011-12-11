@@ -145,7 +145,7 @@ function init (def) {
   })
 
   var Projectile = new def('Projectile', {
-      player_id   : 0
+      control_id   : 0
     , state       : 'initial'   // of ['initial', 'fly', 'explode'] 
     , kind        : 'projectiles.Bullet' 
     , x           : 0
@@ -272,11 +272,55 @@ function init (def) {
             this.z = unwrap(new_point[2])
             this.state = 'explode'
 
-            var self = this
-            IN_NODE && setTimeout(function() {
-              // mark this projectile for deletion
-              self.delete()
-            }, 1000)
+            if(IN_NODE) {
+              var self = this
+                , players = context.find('Player')
+                , control = context.find('Control')
+                , our_control = context.objects[this.control_id]
+                , our_player = our_control ? context.objects[our_control.player_id] : {__uuid__:null}
+                , explosion_position = new_point
+                , explosion_radius = wrap(3)
+
+              for(var j = 0, len = players.length; j < len; ++j) {
+                var player = players[j]
+                if(player.__uuid__ === our_player.__uuid__)
+                  continue
+
+                var player_position = [wrap(player.x), 0, wrap(player.z)]
+                  , player_to_explosion = player_position.sub(explosion_position)
+                  , player_distance = player_to_explosion.magnitude()
+                  , player_dot_normal
+                  , player_control 
+
+                if(Math.abs(player_distance - explosion_radius) < EPSILON)
+                  player_distance = explosion_radius
+
+                if(player_distance > explosion_radius)
+                  continue
+
+                player_dot_normal = player_to_explosion.dot(normal)
+
+                if(player_dot_normal < 0) {
+                  continue
+                }
+
+                player.health -= 30
+                if(player.heath < 0) {
+                  // player died!
+                  player_control = control.filter(function(ctrl) { return ctrl.player_id === player.__uuid__ })[0]
+                  if(player_control) {
+                    player_control.player_id = null
+                    our_control.score += 1
+                  }
+                }
+
+              }
+              this.timeout && clearTimeout(this.timeout)
+              setTimeout(function() {
+                // mark this projectile for deletion
+                self.delete()
+              }, 1000)
+            }
             return
           }
         }
@@ -587,10 +631,15 @@ function init (def) {
               , dx = Math.sin(-initial_rot) * 20 
               , dz = Math.cos(-initial_rot) * 20
 
+            projectile.control_id = this.__uuid__
             projectile.x = player.x
             projectile.z = player.z
             projectile.dx = dx
             projectile.dz = dz
+
+            projectile.timeout = setTimeout(function() {
+              projectile.delete()
+            }, 1000)
           }
         }
         input.old_mouse_0 = new_mouse_0
