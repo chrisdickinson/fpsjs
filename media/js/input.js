@@ -51,11 +51,17 @@ Input.events.mousewheel = function(ev) {
 }
 
 Input.events.mousedown = function(ev) {
+  ev.preventDefault()
   this.object['mouse_0'] = true 
 }
 
 Input.events.mouseup = function(ev) {
+  ev.preventDefault()
   this.object['mouse_0'] = false
+}
+
+Input.events.contextmenu = function(ev) {
+  ev.preventDefault()
 }
 
 function init() {

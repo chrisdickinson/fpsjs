@@ -148,14 +148,144 @@ function init (def) {
       player_id   : 0
     , state       : 'initial'   // of ['initial', 'fly', 'explode'] 
     , kind        : 'projectiles.Bullet' 
-    , r0          : 0
     , x           : 0
     , y           : 0
+    , z           : 0
     , dx          : 0
     , dy          : 0
+    , dz          : 0
   })
 
   Projectile.define_authority(network_master)
+
+  Projectile.set_proto(function(proto) {
+    proto.renderable = true
+    proto.program = 'wall_program'
+    proto.texture = 'wall_texture_0'
+    proto.model = 'wall_model'
+
+    proto.render = function(renderer) {
+      var controlling = renderer.input.controlling()
+        , controlling_player = CONTEXTS.RendererLoop.objects[controlling.player_id]
+
+      if(!controlling_player)
+        return console.log('umm')
+
+      var program = renderer.programs[this.program]
+        , model = renderer.models[this.model]
+
+      renderer.camera.push_state()
+      renderer.camera.translate(-this.x, 3.5, -this.z) 
+      program.enable()
+      program.set_color(this.state === 'initial' ? [1.0,1.0,1.0] : [1.0,0,0])
+      program.set_model_matrix(false, renderer.camera.model_matrix)
+      program.set_projection_matrix(false, renderer.camera.projection_matrix)
+      program.set_texture(this.texture, 0)
+      program.set_texture(this.texture, 1)
+      model.draw(renderer)
+      renderer.camera.pop_state()
+    }
+
+    proto.update = function(context, dt) {
+      // fly straight and true, yon projectile
+
+      var x = this.x
+        , z = this.z
+        , dx = this.dx / dt
+        , dz = this.dz / dt
+        , walls = context.find('Wall')
+
+      var PLZWRAP = true 
+        , ret = function(x) { return x }
+
+      var GAMMA   = 1000
+        , wrap    = PLZWRAP ? function(x) { return ~~(x * GAMMA) } : ret
+        , unwrap  = PLZWRAP ? function(x) { return (x / GAMMA) } : ret
+        , EPSILON = wrap(10e-1)
+
+      if(this.state === 'initial') {
+        // update momentum
+        vecx = wrap(dx)
+        vecz = wrap(dz)
+
+        x = wrap(x)
+        z = wrap(z)
+
+        magnitude = [vecx, 0, vecz].magnitude()
+
+        for(var i = 0, len = walls.length; i < len; ++i) {
+          var wall = walls[i]
+            , normal = wall.normal || (function() {
+                var x = [
+                      wrap(wall.w * Math.cos(-wall.r0))
+                    , 0
+                    , wrap(wall.w * Math.sin(-wall.r0))
+                  ]
+                  , y = [ 
+                      0
+                    , wrap(wall.h)
+                    , 0
+                  ]
+                  , normal = x.cross(y)
+                  return normal.normalize()
+              })()
+            , wall_offset = wall.offset || (function() {
+                return normal.dot([wrap(wall.x), 0, wrap(wall.y)])
+              })()
+          wall.normal = wall.normal || normal
+          wall.offset = wall.offset || wall_offset
+
+          // skip any wall we're facing away from. 
+          if(wall.normal.dot([vecx, 0, vecz]) / magnitude > 0) {
+            continue 
+          }
+
+          var distance = wall.normal.dot([x, wrap(2.5), z].add([vecx, 0, vecz])) - wall.offset
+
+          if(Math.abs(distance) < EPSILON)
+            distance = 0
+
+          if(0 <= distance && distance <= magnitude) {
+            var v = [vecx, 0, vecz].normalize()
+              , target_point = [vecx, 0, vecz].add([x, 0, z])
+              , new_vecx = v[0] * distance
+              , new_vecz = v[2] * distance
+              , new_point = [x + new_vecx, 0, z + new_vecz]
+              , origin_to_new_point = new_point.sub([wrap(wall.x), 0, wrap(wall.y)])
+              , to_corner = [-Math.cos(-wall.r0), 0, -Math.sin(-wall.r0)]
+              , dotted = origin_to_new_point.dot(to_corner)       // gives |origin_to_new_point| * cos(theta), if it's negative it's in the opposite direction
+
+            if(dotted < 0) {
+              // outside the rotating edge of the wall 
+              continue
+            }
+
+            var off_mag = origin_to_new_point.magnitude()
+            if(off_mag > wrap(wall.w)) {
+              // outside the width of the wall
+              continue
+            }
+
+            this.dx = 0
+            this.dz = 0
+            this.x = unwrap(new_point[0])
+            this.z = unwrap(new_point[2])
+            this.state = 'explode'
+
+            var self = this
+            IN_NODE && setTimeout(function() {
+              // mark this projectile for deletion
+              self.delete()
+            }, 1000)
+            return
+          }
+        }
+        this.x = unwrap(x + vecx)
+        this.z = unwrap(z + vecz) 
+      }
+
+    }
+  })
 
   var Wall = new def('Wall', {
       texture_0   : 0
@@ -334,7 +464,8 @@ function init (def) {
         }
 
         // update rotation and position.
-        var rot = player.r0 = (input.mouse_x % 360) * Math.PI / 180 
+        var rot = player.r0 = (input.mouse_x % 360) * Math.PI / 180
+          , initial_rot = rot 
           , vecx
           , vecz
           , walls
@@ -356,7 +487,6 @@ function init (def) {
           , wrap    = PLZWRAP ? function(x) { return ~~(x * GAMMA) } : ret
           , unwrap  = PLZWRAP ? function(x) { return (x / GAMMA) } : ret
           , EPSILON = wrap(10e-1)
-
 
         if(moving) {
           rot = rot + base_rotation
@@ -443,21 +573,20 @@ function init (def) {
           , old_mouse_0 = input.old_mouse_0 || false
 
         // uh oh, we're firing our LAZER CANNON
-        if(false && IN_NODE && new_mouse_0 != old_mouse_0) {
+        if(IN_NODE && new_mouse_0 != old_mouse_0) {
           if(!new_mouse_0) {
             // mouse up
              
           } else {
             // mouse down
             var projectile = context.create_object(Projectile)
-              , dx = Math.sin(-rot) * 100
-              , dz = Math.cos(-rot) * 100
+              , dx = Math.sin(-initial_rot) * 20 
+              , dz = Math.cos(-initial_rot) * 20
 
-            projectile.x = player.x + dx / 100
-            projectile.z = player.z + dz / 100
-            projectile.r0 = rot
-
-
+            projectile.x = player.x
+            projectile.z = player.z
+            projectile.dx = dx
+            projectile.dz = dz
           }
         }
         input.old_mouse_0 = new_mouse_0
