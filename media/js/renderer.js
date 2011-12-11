@@ -98,7 +98,7 @@ proto.init = function(worker, ready) {
   }
   self.ctxt.blendFunc(self.ctxt.SRC_ALPHA, self.ctxt.ONE_MINUS_SRC_ALPHA)
   self.ctxt.enable(self.ctxt.DEPTH_TEST)
-  self.ctxt.disable(self.ctxt.CULL_FACE)
+  self.ctxt.enable(self.ctxt.CULL_FACE)
   self.ctxt.enable(self.ctxt.BLEND)
   ready()
 }
