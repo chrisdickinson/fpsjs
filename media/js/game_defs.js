@@ -366,6 +366,7 @@ function init (def) {
     , player_id   : 0
     , handle      : '<Player>'
     , score       : 0
+    , view_bob    : 0
   })
 
   Control.define_authority(network_master)
@@ -489,6 +490,9 @@ function init (def) {
           , EPSILON = wrap(10e-1)
 
         if(moving) {
+
+          this.view_bob += 10 / dt
+
           rot = rot + base_rotation
 
           // update momentum

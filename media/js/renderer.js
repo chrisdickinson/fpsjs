@@ -492,7 +492,6 @@ Camera.prototype.translate = function(x, y, z) {
   mat4.translate(this.model_matrix, [x, y, z])
 }
 
-X = Y = Z = R = 0
 proto.start = function(controlling_id, network, worker, all_data) {
 
   var controlling = controlling_id ? CONTEXTS.RendererLoop.objects[controlling_id] : null
@@ -529,7 +528,7 @@ proto.start = function(controlling_id, network, worker, all_data) {
 
     if(player) {
       self.camera.rotate(0, 1, 0, player.r0)
-      self.camera.translate(player.x, Y-4, player.z)
+      self.camera.translate(player.x, -4 + Math.sin(controlling.view_bob)*0.2, player.z)
     }
     for(var i = 0, len = self.renderables.length; i < len; ++i) {
       self.renderables[i].render(self)
