@@ -74,11 +74,13 @@ function worker_init(threads, all) {
 
     var payload = CONTEXTS.Thread.create_update(CONTEXTS.RendererLoop, first_run)
     // send the data back up
-    if(payload)
+    if(payload) {
       postMessage({
         context:CONTEXTS.Thread.uuid
       , payload:payload
       })
+      CONTEXTS.Thread.clean()
+    }
 
     first_run = false
   }, 33)
