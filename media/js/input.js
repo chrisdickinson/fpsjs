@@ -7,11 +7,13 @@ if(typeof define !== 'undefined') {
 }
 
 
-function Input(object, controlling_id, camera) {
+function Input(object, controlling_id, camera, canvas) {
   this.object = object
   this.controlling_id = controlling_id
   this.camera = camera
   this.mouselock = false
+  this.canvas = canvas
+
 }
 
 var proto = Input.prototype
@@ -27,26 +29,69 @@ proto.events = function() {
   }).reduce(function(lhs, rhs) { lhs[rhs[0]] = rhs[1]; return lhs; }, {}) 
 }
 
+var noop = function() {}
 Input.events = {}
 
 Input.events.keydown = function(ev) {
   this.object['key_'+ev.keyCode] = true 
 }
 
+
 Input.events.keyup = function(ev) {
+  if((navigator.webkitPointer || navigator.mozPointer || navigator.pointer) && ev.keyCode === 192) {
+    if(document.fullScreen) {
+      ;(document.cancelFullScreen ||
+      document.mozCancelFullScreen ||
+      document.webkitCancelFullScreen ||
+      noop).call(document)
+    } else {
+      ;(this.canvas.requestFullScreen ||
+      this.canvas.mozRequestFullScreen ||
+      this.canvas.webkitRequestFullScreen ||
+      noop).call(this.canvas, Element.ALLOW_KEYBOARD_INPUT)
+    }
+    return
+  }
   this.object['key_'+ev.keyCode] = false
+}
+
+Input.events.fullscreenchange = 
+Input.events.mozfullscreenchange = 
+Input.events.webkitfullscreenchange = function(ev) {
+  this.mouselock = document.fullScreen || document.mozFullScreen || document.webkitIsFullScreen
+
+  var pointer = 
+    navigator.webkitPointer ||
+    navigator.mozPointer ||
+    navigator.pointer 
+
+  if(pointer && this.mouselock) {
+    pointer.lock(this.canvas)
+  }
+
+  if(this.mouselock) {
+    this.canvas.width = window.innerWidth
+    this.canvas.height = window.innerHeight
+    this.camera.reset_matrices()
+  } else {
+    this.canvas.width = 640
+    this.canvas.height = 480
+    this.camera.reset_matrices()
+  }
 }
 
 Input.events.mousemove = function(ev) {
   if(!this.mouselock) return
 
-  this.object.mouse_x += ev.movementX || ev.webkitMovementX || 0
-  this.object.mouse_y += ev.movementY || ev.webkitMovementY || 0
+  this.object.mouse_x += (ev.movementX || ev.webkitMovementX || 0) / 10
+  this.object.mouse_y += (ev.movementY || ev.webkitMovementY || 0) / 10
 }
 
 Input.events.mousewheel = function(ev) {
+  if(this.mouselock) return
+
   this.object.mouse_x += ev.wheelDeltaX / 100
-  this.object.mouse_y += ev.wheelDeltaY / 100
+  // this.object.mouse_y += ev.wheelDeltaY / 100
   ev.preventDefault()
 }
 

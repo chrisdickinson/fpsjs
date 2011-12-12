@@ -488,9 +488,7 @@ function Camera(tied_to, canvas) {
   self._projection_matrix = mat4.create()
   self.eye_position = [0, 0, 0, 0]
 
-  self._projection_matrix = mat4.identity(self._projection_matrix) 
-  self._model_matrix = mat4.identity(self._model_matrix) 
-  mat4.perspective(45, self.canvas.width / self.canvas.height, 0.1, 100, self._projection_matrix)
+  self.reset_matrices()
 
   self.stack = [{
     model:      self._model_matrix
@@ -505,6 +503,13 @@ function Camera(tied_to, canvas) {
   Object.defineProperty(self, 'projection_matrix', {
     get : function() { return self.stack[self.stack.length-1].projection }
   })
+}
+
+Camera.prototype.reset_matrices = function() {
+  var self = this
+  mat4.identity(self._projection_matrix)
+  mat4.identity(self._model_matrix)
+  mat4.perspective(45, self.canvas.width / self.canvas.height, 0.1, 100, self._projection_matrix) 
 }
 
 Camera.prototype.push_state = function() {
@@ -536,7 +541,7 @@ proto.start = function(controlling_id, network, worker, all_data) {
     , self = this
 
   self.camera = new Camera(controlling, self.canvas)
-  self.input = new this.input_class(CONTEXTS.RendererLoop.create_object(Definition.all.Input), controlling_id, self.camera)
+  self.input = new this.input_class(CONTEXTS.RendererLoop.create_object(Definition.all.Input), controlling_id, self.camera, self.canvas)
 
   var events = this.input.events()
   for(var key in events) {
@@ -565,6 +570,7 @@ proto.start = function(controlling_id, network, worker, all_data) {
     self.camera.push_state()
 
     if(player) {
+      self.camera.rotate(1, 0, 0, player.r1)
       self.camera.rotate(0, 1, 0, player.r0)
       self.camera.translate(player.x, -4 + Math.sin(controlling.view_bob)*0.2, player.z)
     }

@@ -103,6 +103,7 @@ function init (def) {
     , y           : 0
     , z           : 0
     , r0          : 0
+    , r1          : 0
     , weapon_type : 'weapons.Gun'
   })
 
@@ -518,6 +519,7 @@ function init (def) {
           , z = player.z
           , magnitude
 
+        player.r1 = (input.mouse_y % 160) * Math.PI / 180
         walls = context.find('Wall')
 
         dx *= speed
