@@ -115,8 +115,20 @@ function init (def) {
     proto.render = function(renderer) {
       var controlling = renderer.input.controlling()
 
-      if(controlling.player_id === this.__uuid__)
+      if(controlling.player_id === this.__uuid__) {
+        if(this._cached_health === undefined) {
+          this._cached_health = this.health
+        } else {
+          if(this._cached_health > this.health) {
+            var lvl = this._cached_health - this.health
+
+            lvl = (lvl/30) * 1024
+            renderer.damage_level = Math.min(1024, lvl)
+          }
+          this._cached_health = this.health
+        }
         return
+      }
 
       var program = renderer.programs.wall_program
         , model = renderer.models.wall_model
@@ -170,7 +182,7 @@ function init (def) {
         , controlling_player = CONTEXTS.RendererLoop.objects[controlling.player_id]
 
       if(!controlling_player)
-        return console.log('umm')
+        return
 
       var program = renderer.programs[this.program]
         , model = renderer.models[this.model]

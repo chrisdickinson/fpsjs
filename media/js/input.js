@@ -7,13 +7,13 @@ if(typeof define !== 'undefined') {
 }
 
 
-function Input(object, controlling_id, camera, canvas) {
+function Input(object, controlling_id, camera, canvas, change_size) {
   this.object = object
   this.controlling_id = controlling_id
   this.camera = camera
   this.mouselock = false
   this.canvas = canvas
-
+  this.change_size = change_size
 }
 
 var proto = Input.prototype
@@ -78,6 +78,8 @@ Input.events.webkitfullscreenchange = function(ev) {
     this.canvas.height = 480
     this.camera.reset_matrices()
   }
+
+  this.change_size()
 }
 
 Input.events.mousemove = function(ev) {

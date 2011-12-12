@@ -119,8 +119,6 @@ Context.prototype.recv_update = function(payload, from_context) {
       } else {
         this.objects[key].recv_update(payload[key][1], from_context)
       }
-    } else {
-      IN_WORKER && console.log('skipping ', payload[key][0])
     }
   }
 }

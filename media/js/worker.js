@@ -28,8 +28,6 @@ onmessage = function(ev) {
     CONTEXTS.Thread.recv_update(ev.data.payload, CONTEXTS.Network)
   } else if(ev.data.context === CONTEXTS.RendererLoop.uuid) {
     CONTEXTS.Thread.recv_update(ev.data.payload, CONTEXTS.RendererLoop)
-  } else {
-    console.error('WHAT IS THIS FOR: ', ev.data)    
   }
 }
 
@@ -57,10 +55,6 @@ function worker_init(threads, all) {
 
   var avg = 0
     , samples = 0
-
-  //setInterval(function() {
-  //  console.log('avg dt: '+(avg/samples))
-  //}, 1000)
 
   game.thread_loop(function(dt) {
     ++samples

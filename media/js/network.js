@@ -22,7 +22,6 @@ proto.init = function(context, ready) {
   this.socket.on('ack', function(data) {
     var responder = self.ack[data.ack]
     if(responder) {
-      console.log(data)
       delete self.ack[data.ack]
       responder.apply(null, data.data)
     }

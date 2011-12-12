@@ -21,12 +21,16 @@ function Renderer(input_class) {
   //
   this.textures = {} 
   this.models = {}
+  this.programs = {}
 
   //
   this.camera = null
   this.input = null
   this.worker = null
   this.network = null
+
+  // tint the screen red (max == 1024)
+  this.damage_level = 0
 }
 
 var proto = Renderer.prototype
@@ -74,7 +78,7 @@ proto.create_target = function() {
   // set up framebuffer
 
   gl.bindTexture(gl.TEXTURE_2D, target.texture)
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, self.canvas.width, self.canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
 
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
@@ -89,7 +93,7 @@ proto.create_target = function() {
 
   gl.bindRenderbuffer(gl.RENDERBUFFER, target.renderbuffer)
 
-  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height)
+  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, self.canvas.width, self.canvas.height)
   gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, target.renderbuffer)
 
   // clean up
@@ -108,6 +112,7 @@ proto.init = function(worker, ready) {
 
   var canvas = document.getElementById('canvas')
     , ctxt = canvas.getContext('experimental-webgl')
+    , gl = ctxt
 
   self.canvas = canvas
   self.ctxt = ctxt
@@ -138,7 +143,18 @@ proto.init = function(worker, ready) {
   self.ctxt.enable(self.ctxt.DEPTH_TEST)
   self.ctxt.disable(self.ctxt.CULL_FACE)
   self.ctxt.enable(self.ctxt.BLEND)
-  ready()
+
+  self.back_buffer = self.create_target()
+
+
+  var screen_buffer = gl.createBuffer()
+  gl.bindBuffer(gl.ARRAY_BUFFER, screen_buffer)
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0]), gl.STATIC_DRAW)
+
+  self.screen_buffer = screen_buffer
+  self.load_program('screen_program', {'fs':'/media/shaders/screen.fs', 'vs':'/media/shaders/screen.vs'}, function() {
+    ready()
+  })
 }
 
 proto.clear = function() {
@@ -423,7 +439,7 @@ proto.load_program = function(key, value, ready) {
         }
         if(type === 'sampler2D') {
           fn = function(str, on) {
-            var tex = self.textures[str]
+            var tex = self.textures[str] || str
             gl.activeTexture(gl['TEXTURE'+(on||0)])
             gl.bindTexture(gl.TEXTURE_2D, tex)
             gl.uniform1i(ulocation, on)
@@ -443,7 +459,6 @@ proto.load_program = function(key, value, ready) {
     } 
 
     self.programs[key] = program
-    console.log(key, self.programs[key])
     ready()
   }
 }
@@ -461,9 +476,6 @@ proto.load = function(manifest, ready) {
       !textures_done && !programs_done && !models_done &&
         ready()
       }
-  self.programs = {}
-  self.textures = {}
-  self.models = {}
 
   Object.keys(manifest.textures || {}).forEach(function(key, value) {
     self.load_texture(key, manifest.textures[key], function() { --textures_done; done() })
@@ -541,7 +553,13 @@ proto.start = function(controlling_id, network, worker, all_data) {
     , self = this
 
   self.camera = new Camera(controlling, self.canvas)
-  self.input = new this.input_class(CONTEXTS.RendererLoop.create_object(Definition.all.Input), controlling_id, self.camera, self.canvas)
+  self.input = new this.input_class(
+      CONTEXTS.RendererLoop.create_object(Definition.all.Input)
+    , controlling_id
+    , self.camera
+    , self.canvas
+    , function() { self.back_buffer = self.create_target() }  
+  )
 
   var events = this.input.events()
   for(var key in events) {
@@ -555,18 +573,20 @@ proto.start = function(controlling_id, network, worker, all_data) {
   document.body.appendChild(elem)
 
   setInterval(function() {
-    elem.innerHTML = fps.avg() + '\n' + net.avg()
+    elem.innerHTML = fps.avg() + '\n' + net.avg() + '\n'
   }, 100)
 
 
+  var gl = self.ctxt
   requestAnimFrame(function iter() {
     controlling = controlling || (controlling_id ? CONTEXTS.RendererLoop.objects[controlling_id] : null)
     var player = controlling && controlling.player_id && CONTEXTS.RendererLoop.objects[controlling.player_id]
     dt = fps()
 
     // redraw ALL THE THINGS 
-    self.clear()
 
+    gl.bindFramebuffer(gl.FRAMEBUFFER, self.back_buffer.framebuffer)
+    self.clear()
     self.camera.push_state()
 
     if(player) {
@@ -578,6 +598,21 @@ proto.start = function(controlling_id, network, worker, all_data) {
       self.renderables[i].render(self)
     }
     self.camera.pop_state()
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+    self.programs.screen_program.enable()
+    self.programs.screen_program.set_overlay([self.damage_level / 1024, 0, 0, 0])
+    self.programs.screen_program.set_resolution([self.canvas.width, self.canvas.height])
+    self.programs.screen_program.set_texture(self.back_buffer.texture, 0)
+    self.clear()
+    gl.bindBuffer(gl.ARRAY_BUFFER, self.screen_buffer)
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(0)
+    gl.drawArrays(gl.TRIANGLES, 0, 6)
+
+    self.damage_level -= dt
+
+    self.damage_level = Math.max(self.damage_level, 0)
 
     var payload = CONTEXTS.RendererLoop.create_update(CONTEXTS.Network)
 
