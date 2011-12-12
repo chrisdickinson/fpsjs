@@ -296,7 +296,7 @@ function init (def) {
 
               for(var j = 0, len = players.length; j < len; ++j) {
                 var player = players[j]
-                if(player.__uuid__ === our_player.__uuid__)
+                if(player.__uuid__ === (our_player || {}).__uuid__)
                   continue
 
                 var player_position = [wrap(player.x), 0, wrap(player.z)]
