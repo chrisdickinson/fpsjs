@@ -8,6 +8,7 @@
     SERVER_UUID:'{{ game.id }}'
   , CLIENT_UUID:'{{ game.create_client_uuid }}'
   }
+  screenname = '{{ req.session.screenname }}'
 </script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/media/js/glmatrix.js"></script>

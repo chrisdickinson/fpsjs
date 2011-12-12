@@ -25,7 +25,7 @@ function module(game, renderer, network) {
       console.log('renderer init')
 
       // join the game... (update events will start being sent)
-      network.send('join', threads, function(err, manifest, controlling_id, all_data) {
+      network.send('join', {threads:threads, screenname:screenname}, function(err, manifest, controlling_id, all_data) {
 
         console.log('network join')
 

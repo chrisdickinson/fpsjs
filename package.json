@@ -7,10 +7,11 @@
         "fps"
     ],
     "dependencies" : {
-        "paperboy" : "0.X.X",
-        "plate"    : "0.X.X",
-        "socket.io": "0.X.X",
-        "node-uuid": "1.X.X"
+        "paperboy"  : "0.X.X",
+        "plate"     : "0.X.X",
+        "socket.io" : "0.X.X",
+        "connect"   : "X.X.X",
+        "node-uuid" : "1.X.X"
     },
     "author":"Chris Dickinson",
     "directories":{"lib":"./lib"},
