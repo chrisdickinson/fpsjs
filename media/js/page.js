@@ -25,6 +25,7 @@ function md_get(entry, ready) {
 
   xhr_get(loc, function(err, text) {
     if(err) return ready(err)
+    console.log(text)
 
     ready(null, converter.makeHtml(text.replace(/ -- /g, ' &mdash; ')))
   })
@@ -84,7 +85,6 @@ function click_link(ev) {
       if(err) return ready(err)
 
       target.innerHTML = ''
-      console.log(elements)
       for(var i = 0, el; el = elements[i]; ++i) {
         console.log(el)
         target.appendChild(elements[i])

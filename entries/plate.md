@@ -1,7 +1,7 @@
 Plate.js -- A Template Library
 =================================
 
-Plate is a Django Template Language implementation in Javascript. Super exciting!
+[Plate](#lol) is a Django Template Language implementation in Javascript. Super exciting!
 
 Plate
 ----------
@@ -40,6 +40,10 @@ Documentation
 
 Plate is documented on [it's github wiki](https://github.com/chrisdickinson/plate/wiki). There are "Getting Started"
 guides for both in-browser as well as in-node environments.
+
+> ### a note
+> things are going to change
+> a hot rain falls full of magma, melts alaska
 
 Contributing
 ------------
