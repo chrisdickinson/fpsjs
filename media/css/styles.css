@@ -77,6 +77,8 @@ body { font-size:1.0em; line-height:1.5em; color:#323232; }
 
 h1,h2,h3,h4,h5 { color:black; clear:both; }
 
+pre { clear:both; }
+
 #container { opacity:1.0; -webkit-transition:opacity 0.2s ease-in; -moz-transition:opacity 0.2s ease-in; -ms-transition:opacity 0.2s ease-in; transition:opacity 0.2s ease-in; position:relative; }
 #container.loading { opacity:0.0; }
 
@@ -86,8 +88,9 @@ footer > div > a:first-child { border-radius:3px; border:1px solid black; displa
 footer a img { width:64px; height:64px; float:left; }
 footer aside { float:left; }
 
-blockquote { position:absolute; width:200px; left:-256px; font-size:0.9em; text-align:right; }
-blockquote > * { position:relative; top:-3.5em; }
+blockquote { width:200px; font-size:0.9em; text-align:right; float:left; }
+blockquote > *:first-child { margin-top:0px; }
+blockquote * { color:#663216; }
 
 .right + blockquote { text-align:left; right:-256px; } 
 

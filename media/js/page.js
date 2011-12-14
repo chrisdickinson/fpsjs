@@ -92,6 +92,7 @@ function click_link(ev) {
           script = new Function('return function() { try { '+script.innerText+' } catch(err) {} }')()()
       })
 
+      window.scrollTo(0, 0)
       push_history(href.slice(1))
     })
   } else {
@@ -106,6 +107,7 @@ function push_history(loc) {
 
 addEventListener('popstate', function(ev) {
   var loc = ev.state
+  window.scrollTo(0, 0)
   if(loc) {
     add_class(click_link.target, 'loading')
     decorate_entry(ev.state.replace(/\//g, '_'), function(err, elements) {
