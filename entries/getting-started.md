@@ -37,6 +37,7 @@ repository there, just to give ourselves a nice safety net:
         EOF
     cat > media/js/main.js <<EOF
         console.log("hello world")
+        EOF
     git init
     git add .
     git commit -m "initial commit"

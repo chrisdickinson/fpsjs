@@ -32,4 +32,4 @@ to write, easier to share, and with easy access to thorough documentation; I bel
 help more young folk transform their interest in writing video games into a love of programming. The barrier is
 only getting lower, year after year. 
 
-[That said, let's jump in.](#getting-started)
+[That said, let's get started.](#getting-started)
