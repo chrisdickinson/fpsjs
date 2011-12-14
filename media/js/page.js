@@ -25,7 +25,6 @@ function md_get(entry, ready) {
 
   xhr_get(loc, function(err, text) {
     if(err) return ready(err)
-    console.log(text)
 
     ready(null, converter.makeHtml(text.replace(/ -- /g, ' &mdash; ')))
   })
@@ -41,7 +40,6 @@ function decorate_entry(entry, ready) {
     , i
 
   if(decorate_entry.cache[entry]) {
-    console.log(decorate_entry.cache[entry])
     return ready(null, decorate_entry.cache[entry])
   }
 
@@ -86,9 +84,13 @@ function click_link(ev) {
 
       target.innerHTML = ''
       for(var i = 0, el; el = elements[i]; ++i) {
-        console.log(el)
         target.appendChild(elements[i])
       }
+
+      [].slice.call(target.getElementsByTagName('script')).forEach(function(script) {
+        if(script.innerText)
+          script = new Function('return function() { try { '+script.innerText+' } catch(err) {} }')()()
+      })
 
       push_history(href.slice(1))
     })

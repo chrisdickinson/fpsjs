@@ -37,9 +37,9 @@ Oh yeah, and I apologize for the occasional weird drawing. I can't help it.
 * [Architecture](#architecture)
   How do we combine those three elements to make a game?
 
-* [Collision, part 1](#collision-part-1)
-  Our first stab at collision detection.
+* [First steps](#first-steps)
+  First steps -- building the basic renderer utilities for loading assets; making a player, moving it around.
 
-* [Collision, part 2](#collision-part-2)
-  Our second stab. Let's chat about numerical instability.
+* [Collision](#collision-part-1)
+  Our first stab at collision detection. Let's talk about numerical instability.
 
