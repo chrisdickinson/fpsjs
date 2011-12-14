@@ -99,23 +99,6 @@ For reference, this is a great example of why I think WebGL is so empowering: no
 specific code in the previous example. Load it up in any browser that supports WebGL, and it does 
 *exactly what you'd expect*. Beautiful. **Beautiful**.
 
-## Games from a thousand miles up
+So, we can draw to the screen -- but that's a screensaver (yawn), not a game.
 
-![plainright](/media/img/gameloop.png) So what does a game look like from a high level? How does this look in JavaScript?
-All a game is doing is looping endlessly, checking the input received, advancing the game state using that input
-by some unit of time -- usually the elapsed milliseconds since the last time through the loop -- and then rendering
-the resulting scene.
-
-Input can mean several things: as noted before, we send the elapsed milliseconds into the game update as a form of input;
-keypresses, clicks, and other user-initiated events can likewise be considered input. Furthermore, network updates are input.
-
-That gives us a nice, clean definition:
-
-**Input**: *n.*, any data that potentially changes game state.
-
-In a typical native game, you'll see that core loop defined as a `for(;;)` or `while(1)` loop. What other, familiar construct
-uses a big loop collecting data to notify listeners with updates? That's right -- event loops! Games can be said to be setting
-up giant event loops. What language has a nice, wholesome event loop *baked right in*? Right again! **JavaScript**.
-
-
-
+[What defines a game?](#game-loops)

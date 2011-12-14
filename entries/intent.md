@@ -22,8 +22,14 @@ Oh yeah, and I apologize for the occasional weird drawing. I can't help it.
 
 ## Initial outline
 
+* [Why WebGL?](#intro)
+  "I used to program in C++, but I recovered." A statement about why I think WebGL is such an enabling technology.
+
 * [Getting started](#getting-started)
   Our hero describes the basic structure of the project, along with some pitfalls in the process.
+
+* [Game loops](#game-loops)
+  How does JavaScript affect how we write games? How does one even go about structuring a game?
 
 * [Rendering Basics](#rendering)
   Let's chat about how rendering works with OpenGL, and what we're going to do about it.
