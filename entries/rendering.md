@@ -89,32 +89,44 @@ frame. Instead, we send the data up front, get a handle for it, and send that (t
 
 We'll want to send OpenGL some vertex data and a shader program -- the vertex data represents a triangle,
 while the shader program tells OpenGL how we'd like to render that triangle. Let's split up our `init` function accordingly. First we'll create the
-`init_program` function, which sends our shader program to OpenGL and returns a handle to that program.
+`init_program` function, which sends our shader program to OpenGL and returns a handle to that program. 
 
     // create a shader program (a strategy for
     // rendering OpenGL primitives) and send it
     // to the OpenGL server.
     function init_program() {
+
+        // create a handle for the program (which is comprised of a vertex and fragment shader),
+        // and handles for the vertex and fragment shaders. 
         var program = gl.createProgram()
           , vertex_shader = gl.createShader(gl.VERTEX_SHADER)
           , fragment_shader = gl.createShader(gl.FRAGMENT_SHADER)
 
+        // send OpenGL the source code of our shaders.
         gl.shaderSource(vertex_shader, 
             'attribute vec3 position;\nvoid main() { gl_Position = vec4( position, 1.0 ); }')
         gl.shaderSource(fragment_shader, 
             'void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }')
+
+        // ...and tell OpenGL to compile them.
         gl.compileShader(vertex_shader)
         gl.compileShader(fragment_shader)
 
+        // attach both compiled shaders to the shader program.
         gl.attachShader(program, vertex_shader)
         gl.attachShader(program, fragment_shader)
+
+        // link it, so we have a complete program!
         gl.linkProgram(program)
         return program
     }
 
- We'll get more in depth about shader programs a little later; this particular program just tells OpenGL to treat our vertices as screen coordinates
-(from `[-1, -1]` at the bottom left of the canvas, to `[1, 1]` at the top right corner), and says that when it encounters a primitive (a shape), it should
-put red pixels onto the screen. 
+ We'll get more in depth about shader programs a little later; this particular program just tells OpenGL to treat our vertices as screen coordinates, 
+and says that when it encounters a primitive (a shape), it should put red pixels onto the screen. 
+
+> ### Coordinate System
+> Our coordinate system for this example will
+>
 
 Next, let's send some vertices to the OpenGL server.
 
@@ -122,16 +134,23 @@ Next, let's send some vertices to the OpenGL server.
       , gl = canvas.getContext('experimental-webgl')
 
     // here's our vertex data.
+    // note that it's a flat array. we'll
+    // tell openGL how to slice it up in our draw command.
     var vertices = [
-         -0.5, -0.5, 0
-      ,   0.0,  0.5, 0
-      ,   0.5, -0.5, 0
+         -0.5, -0.5, 0 // bottom left
+      ,   0.0,  0.5, 0 // top middle
+      ,   0.5, -0.5, 0 // bottom right
     ]
 
     // send our vertex data to the OpenGL server.
     function init_vertex() {
+        // create a buffer handle.
         var buffer = gl.createBuffer()
+
+        // tell the OpenGL buffer manipulator that we're talking about our new buffer.
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+
+        // tell OpenGL that we'd like to put the following data into the currently bound buffer.
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW)
         return buffer
     }
@@ -154,6 +173,11 @@ Finally, we define the `draw` function:
         // tell OpenGL that we're talking about the
         // vertexes we sent it earlier.
         gl.bindBuffer(gl.ARRAY_BUFFER, vertex)
+
+        // remember when I mentioned that we'd tell OpenGL how to chop up
+        // our vertices? the second parameter (3) here does just that.
+        // you should read this as:
+        // "OpenGL, the first attribute pointer is pointed at an array of Floats, 3 per vertex."
         gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
         gl.enableVertexAttribArray(0)
 
