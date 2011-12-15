@@ -1,0 +1,143 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>FPS.js</title>
+<link rel="stylesheet" href="/media/css/styles.css" />
+<link rel="stylesheet" href="http://yandex.st/highlightjs/6.1/styles/default.min.css" />
+<header class="centered">
+    <div>
+    <h1><a href="/">Building a networked FPS in the browser</a></h1>
+    </div>
+</header>
+<div class="centered">
+    <div id="container">
+        <h1 id="gettingstarted">Getting Started</h1>
+
+<p>In this article, I'll describe the basic, initial setup for our WebGL game and give a brief primer
+on how games are typically structured.</p>
+
+<h2 id="ethosandanoteonstyle">Ethos (and a note on style)</h2>
+
+<p>As we work on this game, I'd like to introduce requirements only as our needs grow complex enough to
+necessitate them. I find that it'd easiest to think about things in small, discrete steps; and to that
+end, throwing ourselves into the deep end with a full-fledged Node.js server instance with websockets
+and webworkers and session data seems like it would spread our attention too thin. </p>
+
+<p>I mean, uh, spoilers. Anyway, while we're getting started we really don't need anything outside of
+a simple http server that serves up our HTML, JavaScript, and media assets. It doesn't need to do
+anything dynamic at first.</p>
+
+<p>It bears mentioning at this point that I'll be adhering to the comma-first, no-semicolons style of JavaScript.
+It's a preference this, mainly; however, you'll note that I stick to <code>method_name</code> versus <code>methodName</code> 
+casing. This flies in the face of what everyone else in JavaScript does and I'm well aware of it. If you
+feel more comfortable camelCasing, go right ahead &mdash; but I won't be. Blame my python heritage.</p>
+
+<h2 id="firststeps">First steps</h2>
+
+<p>Let's create our game directory and set ourselves up with a few subdirectories &mdash; and initialize a git
+repository there, just to give ourselves a nice safety net:</p>
+
+<pre><code>mkdir $YOURGAME
+cd $YOURGAME
+mkdir -p media/{img,css,js,shaders,models}
+curl http://requirejs.org/docs/release/1.0.2/minified/require.js &gt; media/js/require.js
+cat &gt; index.html &lt;&lt;EOF
+    &lt;!doctype html&gt;
+    &lt;meta charset="utf-8"&gt;
+    &lt;title&gt;FPS&lt;/title&gt;
+    &lt;canvas id="canvas" width=640 height=480&gt;&lt;/canvas&gt;
+    &lt;script src="/media/js/require.js" data-main="/media/js/main"&gt;&lt;/script&gt;
+    EOF
+cat &gt; media/js/main.js &lt;&lt;EOF
+    console.log("hello world")
+    EOF
+git init
+git add .
+git commit -m "initial commit"
+</code></pre>
+
+<p>Cool. Now we can serve it up using python's built-in <code>SimpleHTTPServer</code>:</p>
+
+<pre><code>python -m SimpleHTTPServer
+</code></pre>
+
+<p>And you can open the page at <code>http://localhost:8000</code>. This gives us a basic entry point to start futzing
+with JavaScript.</p>
+
+<blockquote>
+  <h2 id="rerequirejs">Re: require.js</h2>
+  
+  <p>Early in this project, I used require.js to manage my in-browser javascript.
+  However, given that I end up re-using code between Node, WebWorkers, and the browser,
+  require.js quickly became a liabilty. Caveat emptor.</p>
+</blockquote>
+
+<p>We're loading our javascript using <a href="http://requirejs.org/">RequireJS</a>, a nicely designed API for asyncronous
+module definitions. This means that as our project continues, instead of continually revisiting <code>index.html</code>
+with additional script tags (and hoping to get them in the correct order), require.js will do it for us.</p>
+
+<p><strong>Cool.</strong></p>
+
+<p>Let's do something quick and dumb to prove to ourselves that we've got a workable system &mdash; we'll make the world's
+most boring screen saver. Open up <code>/media/js/main.js</code>, and let's perform the following incantations:</p>
+
+<pre><code>// I meant what I said about not using extraneous deps.
+// this means you, jQuery &gt;:| 
+var canvas = document.getElementById('canvas')
+  , gl = canvas.getContext('experimental-webgl')
+  , color = [Math.PI, Math.PI/2, 0]
+
+// we can get away with using setInterval instead of
+// requestAnimationFrame for now.
+setInterval(function() {
+  gl.clearColor.apply(gl, color.map(Math.cos).concat([1]))
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+  color = color.map(function(x) { return x + 0.01 })
+}, 33)
+</code></pre>
+
+<p><canvas id="canvas" class="imgleft" style="background:#CCC"></canvas></p>
+
+<script type="text/javascript">
+    // I meant what I said about not using extraneous deps.
+    // this means you, jQuery >:| 
+    var canvas = document.getElementById('canvas')
+      , gl = canvas.getContext('experimental-webgl')
+      , color = [Math.PI, Math.PI/2, 0]
+
+    // we can get away with using setInterval instead of
+    // requestAnimationFrame for now.
+    setInterval(function() {
+      gl.clearColor.apply(gl, color.map(Math.cos).concat([1]))
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+      color = color.map(function(x) { return x + 0.01 })
+    }, 33)
+</script>
+
+<p>You should see something like the animation on the left (at a different size, of course), if you've got WebGL.
+For reference, this is a great example of why I think WebGL is so empowering: note the utter lack of platform
+specific code in the previous example. Load it up in any browser that supports WebGL, and it does 
+<em>exactly what you'd expect</em>. Beautiful. <strong>Beautiful</strong>.</p>
+
+<p>So, we can draw to the screen &mdash; but that's a screensaver (yawn), not a game.</p>
+
+<p><a href="#game-loops">What defines a game?</a></p><!--/ins-->
+    </div>
+</div>
+<footer class="centered">
+    <div>
+        <a href="http://github.com/chrisdickinson/" target="_blank">
+            <img src="https://secure.gravatar.com/avatar/f70956bdb907c2f8b39ff624ea925ccd?s=140" />
+        </a>
+        <aside>
+        <p><em>Chris Dickinson</em> is a hacker living in Lawrence, KS.
+        <p>He enjoys drawing, coffee, Starcraft, and chatting about JavaScript.
+        <p>You can follow him <a href="http://twitter.com/isntitvacant/">on twitter</a> or
+           <a href="http://github.com/chrisdickinson/">on github</a>. He&rsquo;d very much appreciate
+           it!
+        </aside>
+    </div>
+</footer>
+<script src="/media/js/showdown.js"></script>
+<script src="/media/js/highlight.js"></script>
+<script>[].slice.call(document.getElementsByTagName('code')).forEach(function(el) { hljs.highlightBlock(el, '  ') })</script>
+<script src="/media/js/page.js"></script>

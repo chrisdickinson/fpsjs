@@ -1,4 +1,5 @@
 var ENTRY_PATH = '/entries/'
+  , OUT_PATH = '/posts/'
 
 function add_class(el, classname) {
   el.classList.add(classname)
@@ -102,15 +103,19 @@ function click_link(ev) {
 click_link.target = document.getElementById('container')
 
 function push_history(loc) {
-  history.pushState(loc, loc.replace('_', '/'), loc)
+  history.pushState(OUT_PATH + loc, OUT_PATH + loc.replace('_', '/'), OUT_PATH + loc)
 }
 
 addEventListener('popstate', function(ev) {
   var loc = ev.state
   window.scrollTo(0, 0)
+
   if(loc) {
+    if(loc.charAt(loc.length - 1) === '/')
+      loc = loc.slice(0, -1)
+
     add_class(click_link.target, 'loading')
-    decorate_entry(ev.state.replace(/\//g, '_'), function(err, elements) {
+    decorate_entry(loc.replace(OUT_PATH, '').replace(/\//g, '_'), function(err, elements) {
       remove_class(click_link.target, 'loading')
       if(err) return
       

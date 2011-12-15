@@ -1,0 +1,307 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>FPS.js</title>
+<link rel="stylesheet" href="/media/css/styles.css" />
+<link rel="stylesheet" href="http://yandex.st/highlightjs/6.1/styles/default.min.css" />
+<header class="centered">
+    <div>
+    <h1><a href="/">Building a networked FPS in the browser</a></h1>
+    </div>
+</header>
+<div class="centered">
+    <div id="container">
+        <h1 id="renderingbasics">Rendering Basics</h1>
+
+<p>In the <a href="#game-loops">previous article</a>, we posed a question: what do the <code>init</code>, <code>game_draw</code>,
+and <code>game_update</code> functions look like? This article will explain a bit about <code>init</code> and <code>game_draw</code>,
+but before we get started detailing how those work, we should talk a bit about how WebGL works.</p>
+
+<h2 id="webglhowdoesitwork">WebGL, how does it work?</h2>
+
+<p>At it's core, OpenGL (and hence, WebGL) is designed as a state machine server. Your code (henceforth
+referred to as the <em>"client"</em>) issues commands to change the state of the renderer. Over the course of
+the frame, the client changes the state of the OpenGL server and issues draw commands. The result of a
+draw call is dependent on the state of the server at the time of the call. In terms of REST &mdash; which
+you may be a bit more familiar with &mdash; imagine the client continually <code>POST</code>'ing partial state changes
+to the server; while the draw calls are like <code>PUT</code> requests dependent on server state. In other words,
+the world's worst REST API.</p>
+
+<p>However, this continual mutation of state (and interdependent results based on previous state) allows for
+a lot of potential outcomes, and thus a staggering amount of flexibility.</p>
+
+<blockquote>
+  <h1 id="disclaimer">Disclaimer</h1>
+  
+  <p>Keep in mind, this conceptualization is based on
+  technologies of latter year: for instance, when
+  I first started learning OpenGL, AGP was the 
+  <em>new, cool thing.</em> However, even with the advent of
+  PCI Express, I think this abstraction holds up.</p>
+</blockquote>
+
+<p><strong>But wait</strong> &mdash; the GPU is a <em>part</em> of your computer! Why is OpenGL designed to act like a server separate from
+your client?</p>
+
+<p>GPU's usually have their own allocation of high performance memory, and tons upon tons of tiny parallel computing cores.
+Processing local information is <strong>fast, fast, fast</strong>. However, your CPU and the memory attached to it are completely
+distinct from the GPU. Any information that the CPU has that it wants the GPU to know about has to travel over
+a bus to get to the GPU &mdash; compared to having local data, this is <strong>slow</strong>. </p>
+
+<p>For optimum performance, the client should send the server all of the data it needs to run the process. Of course,
+this is such a platonic ideal, especially for a game &mdash; things are changing on the CPU all the time, and those changes
+need to be reflected in the rendered screen. We get a nice continuum out of this abstraction, however: the less the
+client sends to the server, the faster it will be to draw the frame. This can be measured both in volume of commands,
+as well as size of data sent. We'll call this the <strong>State Change Bottleneck</strong>. The easiest way to avoid this is to
+organize your renderer such that similar items can be grouped together, and share a single <code>setup</code> and <code>teardown</code> of
+state. </p>
+
+<p>Another bottleneck, one we'll call the <strong>Primitive Bottleneck</strong>: If there are a lot of primitives on the GPU that need
+intensive processing, and we're just minimally telling the GPU that it needs to draw that data every frame (basically,
+the tiniest amount of client code possible!), the framerate will suffer. We can avoid this by only sending primitives that
+we know to be visible.</p>
+
+<p>It's useful to keep those two bottlenecks
+in mind as we design our program, since one of our stated goals is that we should run at 30 frames per second or better --
+in other words, it should only take 33 milliseconds to draw a frame.</p>
+
+<h3 id="sowhatkindofdataarewesendingtotheserver">So what kind of data are we sending to the server?</h3>
+
+<p>There are three basic kinds of data we'll be sending to the server: state changes (usually cheap), rendering data (usually pricey),
+and draw commands (price determined by the previous two items).</p>
+
+<p>State changes look like: <code>gl.enable(gl.CULL_FACE)</code>, or <code>gl.enable(gl.TEXTURE0)</code>. These can be fairly cheap; however it's 
+best to keep that GPU bottleneck in mind &mdash; we'd rather change state as little as humanly possible while drawing our scene.</p>
+
+<p>Rendering data can come in all sorts of shapes and sizes. To whit:</p>
+
+<ul>
+<li>Vertices</li>
+<li>Shader programs</li>
+<li>Program data</li>
+<li>Texture data</li>
+</ul>
+
+<p>Rendering data is (typically) generated and sent to the GL server during initialization. This makes sense: it's quite hefty, usually,
+and it's not expected to change dynamically over the course of the game. Sending it at the beginning makes it a one-time sunk cost.</p>
+
+<p>So let's take a simple case: we want to draw a triangle to the screen. How do we accomplish this? Our <code>init</code> function might look
+a little bit like this pseudocode:</p>
+
+<pre><code>// init:
+our_program = send_render_program_to_gl()
+vertex_handle = send_vertices_to_gl()
+
+// draw:
+gl_use_program(our_program)
+gl_send_program_data('vertex_handle', vertex_handle)
+gl_draw(gl.TRIANGLES, vertex_handle)
+</code></pre>
+
+<p>Of course, this is simplified, but it shows a common pattern you'll see while writing game initialization and rendering code. Send something
+to WebGL, get a handle back. When we want to use that data, we tell WebGL that we'd like to change the current state of the server so that we're
+using that handle. Then we issue a draw call. In other words, we're only sending the bulk of our data at the outset of the game, not during each
+frame. Instead, we send the data up front, get a handle for it, and send that (tiny!) handle back to the server to use the data we sent earlier. </p>
+
+<h2 id="theoryisboringletsdrawatriangle">Theory is boring. Let's draw a triangle.</h2>
+
+<p>We'll want to send OpenGL some vertex data and a shader program &mdash; the vertex data represents a triangle,
+while the shader program tells OpenGL how we'd like to render that triangle. Let's split up our <code>init</code> function accordingly. First we'll create the
+<code>init_program</code> function, which sends our shader program to OpenGL and returns a handle to that program.</p>
+
+<pre><code>// create a shader program &amp;mdash; a strategy for
+// rendering OpenGL primitives &amp;mdash; and send it
+// to the OpenGL server.
+function init_program() {
+    var program = gl.createProgram()
+      , vertex_shader = gl.createShader(gl.VERTEX_SHADER)
+      , fragment_shader = gl.createShader(gl.FRAGMENT_SHADER)
+
+    gl.shaderSource(vertex_shader, 
+        'attribute vec3 position;\nvoid main() { gl_Position = vec4( position, 1.0 ); }')
+    gl.shaderSource(fragment_shader, 
+        'void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }')
+    gl.compileShader(vertex_shader)
+    gl.compileShader(fragment_shader)
+
+    gl.attachShader(program, vertex_shader)
+    gl.attachShader(program, fragment_shader)
+    gl.linkProgram(program)
+    return program
+}
+</code></pre>
+
+<p>We'll get more in depth about shader programs a little later; this particular program just tells OpenGL to treat our vertices as screen coordinates
+(from <code>[-1, -1]</code> at the bottom left of the canvas, to <code>[1, 1]</code> at the top right corner), and says that when it encounters a primitive (a shape), it should
+put red pixels onto the screen. </p>
+
+<p>Next, let's send some vertices to the OpenGL server.</p>
+
+<pre><code>var canvas = document.getElementById('triangle')
+  , gl = canvas.getContext('experimental-webgl')
+
+// here's our vertex data.
+var vertices = [
+     -0.5, -0.5, 0
+  ,   0.0,  0.5, 0
+  ,   0.5, -0.5, 0
+]
+
+// send our vertex data to the OpenGL server.
+function init_vertex() {
+    var buffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW)
+    return buffer
+}
+</code></pre>
+
+<blockquote>
+  <p>A note: we use <code>Float32Array</code> to pass our vertex data to OpenGL; this constructor is built in to all WebGL compliant browsers.</p>
+</blockquote>
+
+<p>Again, pretty simple. Our vertices have 3 components, <code>[x, y, z]</code>. We ignore <code>z</code> for now, since we're just drawing a 2D triangle. After the last two <code>init</code>
+functions, you should see another pattern emerging: when we want to send data to OpenGL, we ask it for a handle up front &mdash; e.g., <code>gl.createBuffer()</code>, <code>gl.createProgram()</code>,
+and friends &mdash; and then send data to that handle using another function (<code>attachShader</code>, <code>bufferData</code>, et cetera). You'll see this pattern a lot as we
+continue to add functionality to our tiny game. </p>
+
+<p>Finally, we define the <code>draw</code> function: </p>
+
+<pre><code>function draw(program, vertex) {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    // tell OpenGL to use our shader program
+    gl.useProgram(program)
+
+    // tell OpenGL that we're talking about the
+    // vertexes we sent it earlier.
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertex)
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(0)
+
+    // issue a draw command to OpenGL.
+    gl.drawArrays(gl.TRIANGLES, 0, vertices.length/3)
+}
+
+var program = init_program()
+  , vertex = init_vertex()
+
+// set the background color, RGBA (from 0.0 to 1.0).
+gl.clearColor(0, 0, 0, 1.0)
+setInterval(function() {
+    draw(program, vertex)
+}, 33)
+</code></pre>
+
+<p><canvas id="triangle" class="imgleft" style="background:#CCC"></p>
+
+<script type="text/javascript">
+
+    (function(){
+    var canvas = document.getElementById('triangle')
+      , gl = canvas.getContext('experimental-webgl')
+
+    // here's our vertex data.
+    var vertices = [
+         -0.5, -0.5, 0
+      ,   0.0,  0.5, 0
+      ,   0.5, -0.5, 0
+    ]
+
+    // create a shader program &mdash; a strategy for
+    // rendering OpenGL primitives &mdash; and send it
+    // to the OpenGL server.
+    function init_program() {
+        var program = gl.createProgram()
+          , vertex_shader = gl.createShader(gl.VERTEX_SHADER)
+          , fragment_shader = gl.createShader(gl.FRAGMENT_SHADER)
+
+        gl.shaderSource(vertex_shader, 'attribute vec3 position;\nvoid main() { gl_Position = vec4( position, 1.0 ); }')
+        gl.shaderSource(fragment_shader, 'void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }')
+        gl.compileShader(vertex_shader)
+        gl.compileShader(fragment_shader)
+
+        gl.attachShader(program, vertex_shader)
+        gl.attachShader(program, fragment_shader)
+        gl.linkProgram(program)
+        return program
+    }
+
+    // send our vertex data to the OpenGL server.
+    function init_vertex() {
+        var buffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW)
+        return buffer
+    }
+
+    function draw(program, vertex) {
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+        // tell OpenGL to use our shader program
+        gl.useProgram(program)
+
+        // tell OpenGL that we're talking about the
+        // vertexes we sent it earlier.
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertex)
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+        gl.enableVertexAttribArray(0)
+
+        // issue a draw command to OpenGL.
+        gl.drawArrays(gl.TRIANGLES, 0, vertices.length/3)
+    }
+
+    var program = init_program()
+      , vertex = init_vertex()
+
+    // set the background color, RGBA (from 0.0 to 1.0).
+    gl.clearColor(0, 0, 0, 1.0)
+    draw(program, vertex)
+
+    })()
+</script>
+
+<p>Cool. You should see our friend, the triangle, to the left. <strong>To recap</strong>, in this section we discussed
+how the WebGL API is structured, and how that affects your program design. We learned that WebGL treats
+talking to your graphics card like a client/server system, and that it employs a state machine to determine
+how to render draw calls. 
+<a href="#rendering_1">Next, I'd like to talk about the different kinds of data we'll be sending to WebGL</a></p>
+
+<h3 id="triangles">Triangles</h3>
+
+<h3 id="shaderprograms">Shader programs.</h3>
+
+<h3 id="howwellusetriangles">How we'll use triangles</h3>
+
+<h2 id="someusefulmaths">Some useful maths.</h2>
+
+<h3 id="vectors">Vectors</h3>
+
+<h3 id="dotproducts">Dot products</h3>
+
+<h3 id="crossproducts">Cross products</h3>
+
+<h3 id="findingtheintersectionbetweenapointandaplane">Finding the intersection between a point and a plane</h3>
+
+<h3 id="determiningifapointisonaplane">Determining if a point is on a plane</h3>
+
+<h3 id="determiningifapointiswithintheboundsofarectangle">Determining if a point is within the bounds of a rectangle</h3><!--/ins-->
+    </div>
+</div>
+<footer class="centered">
+    <div>
+        <a href="http://github.com/chrisdickinson/" target="_blank">
+            <img src="https://secure.gravatar.com/avatar/f70956bdb907c2f8b39ff624ea925ccd?s=140" />
+        </a>
+        <aside>
+        <p><em>Chris Dickinson</em> is a hacker living in Lawrence, KS.
+        <p>He enjoys drawing, coffee, Starcraft, and chatting about JavaScript.
+        <p>You can follow him <a href="http://twitter.com/isntitvacant/">on twitter</a> or
+           <a href="http://github.com/chrisdickinson/">on github</a>. He&rsquo;d very much appreciate
+           it!
+        </aside>
+    </div>
+</footer>
+<script src="/media/js/showdown.js"></script>
+<script src="/media/js/highlight.js"></script>
+<script>[].slice.call(document.getElementsByTagName('code')).forEach(function(el) { hljs.highlightBlock(el, '  ') })</script>
+<script src="/media/js/page.js"></script>

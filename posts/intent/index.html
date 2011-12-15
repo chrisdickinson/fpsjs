@@ -1,0 +1,76 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>FPS.js</title>
+<link rel="stylesheet" href="/media/css/styles.css" />
+<link rel="stylesheet" href="http://yandex.st/highlightjs/6.1/styles/default.min.css" />
+<header class="centered">
+    <div>
+    <h1><a href="/">Building a networked FPS in the browser</a></h1>
+    </div>
+</header>
+<div class="centered">
+    <div id="container">
+        <h1 id="astatementofintent">A Statement of Intent</h1>
+
+<p>This blog documents my experience attempting to build a fairly full featured
+networked first person shooter in the browser.</p>
+
+<p>In specific, I'll go over the steps taken in building the project &mdash; pitfalls and otherwise; specific
+game topics, and where applicable, I'll link to outside documentation or walkthroughs that illuminate the
+process. In addition, wherever JavaScript enables a particularly neat trick, I'll note it in the margins.</p>
+
+<p>A caveat: as this is the documentation of a process, any single article should not be regarded by itself as
+a "How To" guide. There will be missteps, perhaps quite frequently. In one article I may describe a process
+that makes (or made) sense to me at the time; and in a later article I may rebut it. That said, when that happens,
+I'll include a link to the new article in the old article, alongside a brief explanation of why I was wrong.</p>
+
+<p><img src="/media/img/mpm.png" alt="right" title="" /> A second caveat: I'm not a game programmer by trade &mdash; quite the opposite, really: I'm a web developer working
+at Mediaphormedia in Lawrence, Kansas. My degree is in liberal arts; I've only had a single full year of 
+calculus courses, and that was over six years ago. In short: I might be wrong. I'm relying on you, dear reader,
+to <a href="http://github.com/chrisdickinson/fpsjs/issues">let me know where I'm incorrect</a>, and I humbly ask that if
+you have a better solution available, please submit it to me as a github pull request. </p>
+
+<p>Oh yeah, and I apologize for the occasional weird drawing. I can't help it.</p>
+
+<h2 id="initialoutline">Initial outline</h2>
+
+<ul>
+<li><p><a href="#intro">Why WebGL?</a>
+"I used to program in C++, but I recovered." A statement about why I think WebGL is such an enabling technology.</p></li>
+<li><p><a href="#getting-started">Getting started</a>
+Our hero describes the basic structure of the project, along with some pitfalls in the process.</p></li>
+<li><p><a href="#game-loops">Game loops</a>
+How does JavaScript affect how we write games? How does one even go about structuring a game?</p></li>
+<li><p><a href="#rendering">Rendering Basics</a>
+Let's chat about how rendering works with OpenGL, and what we're going to do about it.</p></li>
+<li><p><a href="#networking">Networking Basics</a>
+A quick overview of socket.io and what we'll do with that.</p></li>
+<li><p><a href="#web-workers">Web workers</a>
+Web workers! Crazy future alien threads, or easy subprocess spawning? Find out in this article.</p></li>
+<li><p><a href="#architecture">Architecture</a>
+How do we combine those three elements to make a game?</p></li>
+<li><p><a href="#first-steps">First steps</a>
+First steps &mdash; building the basic renderer utilities for loading assets; making a player, moving it around.</p></li>
+<li><p><a href="#collision-part-1">Collision</a>
+Our first stab at collision detection. Let's talk about numerical instability.</p></li>
+</ul><!--/ins-->
+    </div>
+</div>
+<footer class="centered">
+    <div>
+        <a href="http://github.com/chrisdickinson/" target="_blank">
+            <img src="https://secure.gravatar.com/avatar/f70956bdb907c2f8b39ff624ea925ccd?s=140" />
+        </a>
+        <aside>
+        <p><em>Chris Dickinson</em> is a hacker living in Lawrence, KS.
+        <p>He enjoys drawing, coffee, Starcraft, and chatting about JavaScript.
+        <p>You can follow him <a href="http://twitter.com/isntitvacant/">on twitter</a> or
+           <a href="http://github.com/chrisdickinson/">on github</a>. He&rsquo;d very much appreciate
+           it!
+        </aside>
+    </div>
+</footer>
+<script src="/media/js/showdown.js"></script>
+<script src="/media/js/highlight.js"></script>
+<script>[].slice.call(document.getElementsByTagName('code')).forEach(function(el) { hljs.highlightBlock(el, '  ') })</script>
+<script src="/media/js/page.js"></script>

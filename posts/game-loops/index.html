@@ -1,0 +1,129 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>FPS.js</title>
+<link rel="stylesheet" href="/media/css/styles.css" />
+<link rel="stylesheet" href="http://yandex.st/highlightjs/6.1/styles/default.min.css" />
+<header class="centered">
+    <div>
+    <h1><a href="/">Building a networked FPS in the browser</a></h1>
+    </div>
+</header>
+<div class="centered">
+    <div id="container">
+        <h1 id="gamesfromathousandmilesup">Games from a thousand miles up</h1>
+
+<p><img src="/media/img/gameloop.png" alt="plainright" title="" /> So what does a game look like from a high level? How does this look in JavaScript?
+All a game is doing is looping endlessly, checking the input received, advancing the game state using that input
+by some unit of time &mdash; usually the elapsed milliseconds since the last time through the loop &mdash; and then rendering
+the resulting scene.</p>
+
+<p>Input can mean several things: as noted before, we send the elapsed milliseconds into the game update as a form of input;
+keypresses, clicks, and other user-initiated events can likewise be considered input. Furthermore, network updates are input.</p>
+
+<p>That gives us a nice, clean definition:</p>
+
+<p><strong>Input</strong>: <em>n.</em>, any data that potentially changes game state.</p>
+
+<p>In a typical native game, you'll see that core loop defined as a <code>for(;;)</code> or <code>while(1)</code> loop. What other, familiar construct
+uses a big loop collecting data to notify listeners with updates? That's right &mdash; event loops! Games can be said to be setting
+up giant event loops. What language has a nice, wholesome event loop <em>baked right in</em>? Right again! <strong>JavaScript</strong>.</p>
+
+<p>This actually puts us in a bit of weird spot, compared to native game engines:</p>
+
+<pre><code>// forgive my pathetically incorrect C code.
+#include &lt;game.h&gt;
+#include &lt;time.h&gt;
+
+extern int g_is_running;
+
+int main(int argc, char\*\* argv) {
+    g_is_running = init();
+
+    long now = time(),
+         new_now,
+         dt;
+
+    game_keystate keystate;
+    while(g_is_running) {
+        // grab the elapsed seconds.
+        new_now = time()
+        dt = new_now - now;
+        now = new_now;
+
+        // grab input
+        game_collect_input(&amp;keystate);
+
+        // update the game
+        g_is_running = game_update(dt);
+
+        // draw the game
+        game_draw();
+    }
+}
+</code></pre>
+
+<p>We can't do that in JavaScript. For one, that <code>while</code> loop would completely halt the web page, and eventually our browser would
+pop up with a lovely little "Kill this script? You should probably kill this script." dialog notifying the user that we, as developers,
+have made some questionable choices.</p>
+
+<p>Disregarding that, there's no way to synchronously query key or mouse state &mdash; they come in asynchronously through DOM events, and that's
+that. So a for-loop is right out. How do we structure something like this in JavaScript? Fairly easily, it turns out:</p>
+
+<pre><code>var canvas = document.getElementById('canvas')
+  , gl = canvas.getContext('experimental-webgl')
+
+var keystate = {}
+  , set_keystate = function(onoff) {
+    return function(ev) { keystate[ev.keyCode] = onoff }
+  }
+
+document.addEventListener('keydown', set_keystate(true), true)
+document.addEventListener('keyup', set_keystate(false), true)
+
+var now = new Date
+  , new_now
+  , dt
+
+if(init())
+  requestAnimationFrame(function iter() {
+      new_now = new Date
+      dt = new_now - now
+      now = new_now
+
+      // if the game is still running, redraw
+      // and wait to be signaled for the next frame.
+      if(game_update(dt, keystate)) {
+        game_draw()
+        requestAnimationFrame(iter, canvas)
+      }
+  }, canvas);
+</code></pre>
+
+<p>The above example disregards newer (and thus, cooler) APIs like mouselock, websockets, and webworkers; it's just the bare bones way you'd
+structure your JavaScript code to achieve the aforementioned game loop. I also fail to bring up polyfills &mdash; sometimes APIs like 
+<code>requestAnimationFrame</code> are prefixed on certain browsers. Rest assured, this omission shouldn't give you too much heartburn: polyfills
+exist for these situations, and are a fire-and-forget solution to the problem.</p>
+
+<p>So what's happening in <code>init</code>, <code>game_update</code>, and <code>game_draw</code>?</p>
+
+<p><a href="#rendering">To answer that, we'll have to chat a little bit about the renderer, first.</a></p><!--/ins-->
+    </div>
+</div>
+<footer class="centered">
+    <div>
+        <a href="http://github.com/chrisdickinson/" target="_blank">
+            <img src="https://secure.gravatar.com/avatar/f70956bdb907c2f8b39ff624ea925ccd?s=140" />
+        </a>
+        <aside>
+        <p><em>Chris Dickinson</em> is a hacker living in Lawrence, KS.
+        <p>He enjoys drawing, coffee, Starcraft, and chatting about JavaScript.
+        <p>You can follow him <a href="http://twitter.com/isntitvacant/">on twitter</a> or
+           <a href="http://github.com/chrisdickinson/">on github</a>. He&rsquo;d very much appreciate
+           it!
+        </aside>
+    </div>
+</footer>
+<script src="/media/js/showdown.js"></script>
+<script src="/media/js/highlight.js"></script>
+<script>[].slice.call(document.getElementsByTagName('code')).forEach(function(el) { hljs.highlightBlock(el, '  ') })</script>
+<script src="/media/js/page.js"></script>
