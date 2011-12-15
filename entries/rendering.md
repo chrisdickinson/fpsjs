@@ -11,7 +11,7 @@ referred to as the *"client"*) issues commands to change the state of the render
 the frame, the client changes the state of the OpenGL server and issues draw commands. The result of a
 draw call is dependent on the state of the server at the time of the call. In terms of REST -- which
 you may be a bit more familiar with -- imagine the client continually `POST`'ing partial state changes
-to the server; while the draw calls are like `PUT` requests dependent on server state. In other words,
+to the server; while the draw calls are like `GET` requests dependent on server state. In other words,
 the world's worst REST API.
 
 However, this continual mutation of state (and interdependent results based on previous state) allows for
@@ -91,8 +91,8 @@ We'll want to send OpenGL some vertex data and a shader program -- the vertex da
 while the shader program tells OpenGL how we'd like to render that triangle. Let's split up our `init` function accordingly. First we'll create the
 `init_program` function, which sends our shader program to OpenGL and returns a handle to that program.
 
-    // create a shader program -- a strategy for
-    // rendering OpenGL primitives -- and send it
+    // create a shader program (a strategy for
+    // rendering OpenGL primitives) and send it
     // to the OpenGL server.
     function init_program() {
         var program = gl.createProgram()
