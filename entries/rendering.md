@@ -242,23 +242,3 @@ how the WebGL API is structured, and how that affects your program design. We le
 talking to your graphics card like a client/server system, and that it employs a state machine to determine
 how to render draw calls. 
 [Next, I'd like to talk about the different kinds of data we'll be sending to WebGL](#rendering_1)
-
-### Triangles
-
-### Shader programs.
-
-### How we'll use triangles
-
-## Some useful maths.
-
-### Vectors
-
-### Dot products
-
-### Cross products
-
-### Finding the intersection between a point and a plane
-
-### Determining if a point is on a plane
-
-### Determining if a point is within the bounds of a rectangle
