@@ -121,12 +121,14 @@ while the shader program tells OpenGL how we'd like to render that triangle. Let
         return program
     }
 
- We'll get more in depth about shader programs a little later; this particular program just tells OpenGL to treat our vertices as screen coordinates, 
-and says that when it encounters a primitive (a shape), it should put red pixels onto the screen. 
-
 > ### Coordinate System
-> Our coordinate system for this example will
->
+> Our coordinate system for this example will be slightly different than usual
+> since we're in two dimensions.
+> In this lesson, `[-1, -1]` is at the bottom left of the canvas element, while 
+> `[1, 1]` points at the top right. 
+
+We'll get more in depth about shader programs a little later; this particular program just tells OpenGL to treat our vertices as screen coordinates, 
+and says that when it encounters a primitive (a shape), it should put red pixels onto the screen. 
 
 Next, let's send some vertices to the OpenGL server.
 

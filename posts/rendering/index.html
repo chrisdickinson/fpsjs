@@ -139,14 +139,17 @@ function init_program() {
 }
 </code></pre>
 
-<p>We'll get more in depth about shader programs a little later; this particular program just tells OpenGL to treat our vertices as screen coordinates, 
-and says that when it encounters a primitive (a shape), it should put red pixels onto the screen. </p>
-
 <blockquote>
   <h3 id="coordinatesystem">Coordinate System</h3>
   
-  <p>Our coordinate system for this example will</p>
+  <p>Our coordinate system for this example will be slightly different than usual
+  since we're in two dimensions.
+  In this lesson, <code>[-1, -1]</code> is at the bottom left of the canvas element, while 
+  <code>[1, 1]</code> points at the top right. </p>
 </blockquote>
+
+<p>We'll get more in depth about shader programs a little later; this particular program just tells OpenGL to treat our vertices as screen coordinates, 
+and says that when it encounters a primitive (a shape), it should put red pixels onto the screen. </p>
 
 <p>Next, let's send some vertices to the OpenGL server.</p>
 
