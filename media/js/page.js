@@ -103,7 +103,7 @@ function click_link(ev) {
 click_link.target = document.getElementById('container')
 
 function push_history(loc) {
-  history.pushState(OUT_PATH + loc, OUT_PATH + loc.replace('_', '/'), OUT_PATH + loc)
+  history.pushState(OUT_PATH + loc.replace('_', '/'), OUT_PATH + loc.replace('_', '/'), OUT_PATH + loc.replace('_', '/'))
 }
 
 addEventListener('popstate', function(ev) {

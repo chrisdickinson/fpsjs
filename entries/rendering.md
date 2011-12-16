@@ -243,6 +243,7 @@ Finally, we define the `draw` function:
         // tell OpenGL to use our shader program
         gl.useProgram(program)
 
+
         // tell OpenGL that we're talking about the
         // vertexes we sent it earlier.
         gl.bindBuffer(gl.ARRAY_BUFFER, vertex)
@@ -267,4 +268,4 @@ Cool. You should see our friend, the triangle, to the left. **To recap**, in thi
 how the WebGL API is structured, and how that affects your program design. We learned that WebGL treats
 talking to your graphics card like a client/server system, and that it employs a state machine to determine
 how to render draw calls. 
-[Next, I'd like to talk about the different kinds of data we'll be sending to WebGL](#rendering_1)
+[Next, I'd like to talk about shader programs, and what they mean to us.](#rendering_1)

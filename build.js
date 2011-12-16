@@ -37,7 +37,6 @@ var contents = function(ready) {
   })
 }
 
-setInterval(function() {
   contents(function(files) {
     files.forEach(function(file) {
       var data = insert_tpl(converter.makeHtml(fs.readFileSync(path.join(WORKING_DIR, file), 'utf8')
@@ -49,5 +48,4 @@ setInterval(function() {
         })
     })
   })
-}, 100)
 
