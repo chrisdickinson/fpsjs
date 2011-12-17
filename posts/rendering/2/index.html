@@ -46,12 +46,13 @@ we see when it is supersampled (when the camera is close to the texture). </p>
 OpenGL texture object.</p>
 
 <pre><code>function load_texture(path) {
-    // use the built in `Image` constructor provided to javascript.
-    var img = new Image
-      , texture = gl.createTexture()
+  // use the built in `Image` constructor provided to javascript.
+  var img = new Image
+    , texture = gl.createTexture()
 
-    img.src = path
+  img.src = path
 
+  img.onload = function() {
     // put the image data in the correct order for OpenGL.
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
 
@@ -76,8 +77,8 @@ OpenGL texture object.</p>
 
     // as well as outside the height of the image:
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-
-    return texture
+  }
+  return texture
 } 
 </code></pre>
 
@@ -243,6 +244,7 @@ setInterval(function() {
 
         img.src = path
 
+        img.onload = function() {
         // put the image data in the correct order for OpenGL.
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
 
@@ -267,6 +269,7 @@ setInterval(function() {
 
         // as well as outside the height of the image:
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+        }
 
         return texture
     } 
@@ -474,6 +477,7 @@ void main() {
 
         img.src = path
 
+        img.onload = function() {
         // put the image data in the correct order for OpenGL.
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
 
@@ -498,6 +502,7 @@ void main() {
 
         // as well as outside the height of the image:
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+        }
 
         return texture
     } 

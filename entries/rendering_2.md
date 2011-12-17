@@ -34,12 +34,13 @@ Let's define a new function -- `load_texture` -- that takes a path to an image a
 OpenGL texture object.
 
     function load_texture(path) {
-        // use the built in `Image` constructor provided to javascript.
-        var img = new Image
-          , texture = gl.createTexture()
+      // use the built in `Image` constructor provided to javascript.
+      var img = new Image
+        , texture = gl.createTexture()
 
-        img.src = path
+      img.src = path
 
+      img.onload = function() {
         // put the image data in the correct order for OpenGL.
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
 
@@ -64,8 +65,8 @@ OpenGL texture object.
 
         // as well as outside the height of the image:
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-
-        return texture
+      }
+      return texture
     } 
 
 The result of calling this function is a configured texture object. 
@@ -226,6 +227,7 @@ Okay, now our `draw` call will accept a texture object. Let's modify our loop:
 
         img.src = path
 
+        img.onload = function() {
         // put the image data in the correct order for OpenGL.
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
 
@@ -250,6 +252,7 @@ Okay, now our `draw` call will accept a texture object. Let's modify our loop:
 
         // as well as outside the height of the image:
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+        }
 
         return texture
     } 
@@ -451,6 +454,7 @@ And our fragment shader:
 
         img.src = path
 
+        img.onload = function() {
         // put the image data in the correct order for OpenGL.
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
 
@@ -475,6 +479,7 @@ And our fragment shader:
 
         // as well as outside the height of the image:
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+        }
 
         return texture
     } 
