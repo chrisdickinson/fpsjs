@@ -469,9 +469,8 @@ Let's revist our `draw` function:
         // object so we don't have to keep asking OpenGL where it is.
         program.time_location = time_location
 
-        // set the time to [0, 360 * 1000] (over a second, go from 0 to 360).
-        var time_const = 360 * 1000
-        gl.uniform1f(time_location, (Date.now() % time_const) / time_const)
+        // set the time to [0, 1] (over 3 seconds, go from 0 to 1).
+        gl.uniform1f(time_location, (Date.now() % 3000) / 3000)
 
         gl.bindBuffer(gl.ARRAY_BUFFER, vertex)
         gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
@@ -489,17 +488,6 @@ we're only sending a single value (not an array), and the `f` denotes that the v
 
 What can we do with this? Let's add it to our fragment shader:
 
-    var vert = [''
-    ,'#ifdef GL_ES'
-    ,'precision highp float;'
-    ,'#endif'
-    ,'attribute vec3 position;'
-    ,'uniform float time;'
-    ,'void main() {'
-    ,'    gl_Position = vec4(position * (2.0 + sin(radians(time * 5000.0))), 1.0);'
-    ,'}'
-    ].join('\n')
-
     #ifdef GL_ES
     precision highp float;
     #endif
@@ -507,11 +495,11 @@ What can we do with this? Let's add it to our fragment shader:
     uniform float time;
 
     void main() {
-        // put time on a faster cycle.
-        float x = time / 50000.0;
+        // put time into degrees (2 cycles / iteration)
+        float x = time * 720.0;
 
         // put x in the range [0, 2]
-        x = sin(radians(x) + 2.0;
+        x = sin(radians(x)) + 2.0;
 
         // and back into [0, 1].
         x = x / 2.0;
@@ -531,8 +519,7 @@ shaders with no ill consequences.
     uniform float time;
 
     void main() {
-        // multiply time * 50000.0 to get a faster cycle.
-        float x = sin(radians(time * 50000.0)) + 2.0;
+        float x = sin(radians(time * 360.0)) + 2.0;
 
         x /= 2.0;
  
@@ -559,7 +546,7 @@ shaders with no ill consequences.
     ,'#endif'
     ,'uniform float time;'
     ,'void main() {'
-    ,'    float x = time * 50000.0;'
+    ,'    float x = time * 720.0;'
     ,'    x = (sin(radians(x)) + 2.0) / 2.0;'
     ,'    vec3 rgb = vec3(x, x, x);'
     ,'    gl_FragColor = vec4(rgb, 1.0);'
@@ -573,8 +560,7 @@ shaders with no ill consequences.
     ,'attribute vec3 position;'
     ,'uniform float time;'
     ,'void main() {'
-    ,'    float x = sin(radians(time * 50000.0)) + 2.0;'
-    ,'    x = x / 2.0;'
+    ,'    float x = (sin(radians(time * 360.0)) + 2.0) / 2.0;'
     ,'    gl_Position = vec4(position * x, 1.0);'
     ,'}'
     ].join('\n')
@@ -619,9 +605,8 @@ shaders with no ill consequences.
         // object so we don't have to keep asking OpenGL where it is.
         program.time_location = time_location
 
-        // set the time to [0, 360 * 1000]
-        var time_const = 360 * 1000
-        gl.uniform1f(time_location, (Date.now() % time_const) / time_const)
+        // set the time to [0, 360]
+        gl.uniform1f(time_location, (Date.now() % 3000) / 3000)
 
         gl.bindBuffer(gl.ARRAY_BUFFER, vertex)
         gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
