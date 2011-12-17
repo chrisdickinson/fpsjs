@@ -47,21 +47,16 @@ function init_program() {
 }
 </code></pre>
 
-<p>A high level read of the code yields us the following procedure:</p>
+<p>At a high level, we're performing the following steps:</p>
 
 <ul>
-<li>Create a program object.</li>
-<li>Create a vertex shader.</li>
-<li>Send our vertex shader source code to the graphics card.</li>
-<li>Compile it.</li>
-<li>Create a fragment shader.</li>
-<li>Send our fragment shader source code to the graphics card.</li>
-<li>Compile it.</li>
-<li>Attach the fragment and vertex shaders to the program.</li>
-<li>Tell the program to link.</li>
+<li>Create a vertex shader and compile it.</li>
+<li>Create a fragment shader and compile it.</li>
+<li>Attach the vertex and fragment shaders to a program object.</li>
+<li>Link the program. </li>
 </ul>
 
-<p>Cool. It sounds remarkably similar to compiling and linking C programs, actually:</p>
+<p>That process is remarkably similar to compiling C programs:</p>
 
 <pre><code>cat &gt; greeting.h &lt;&lt;EOF
     #ifndef GREETING_H
@@ -93,97 +88,102 @@ gcc main.c greeting.c -o greeting
 # hello world
 </code></pre>
 
-<p>That last line &mdash; <code>gcc main.c greeting.c -o greeting_program</code> actually takes our two files,
-compiles them into "object files", and then links those object files to produce the 
+<p>The line, <code>gcc main.c greeting.c -o greeting_program</code>, actually takes our two source files <code>greeting.c</code> and <code>main.c</code>,
+compiles them into object files, and then links those object files to produce the 
 complete program "greeting".</p>
 
 <p>It's important to note what's going on here: there are two files that share knowledge of a single function,
 <code>say_hi</code>. Only one has the actual definition of <code>say_hi</code>, the other just calls it and relies on the linking
-process to complete the program.</p>
+process to complete the program. The two object files rely on each other to create a complete representation
+of the program. By themselves, they are incomplete until they are linked.</p>
 
-<p>So from this we can surmise that shader programs must be sharing some kind of state: otherwise there'd
-really be no reason to link them. Further, they come in two "kinds" of source program &mdash; fragment and
-vertex &mdash; that must be linked. Okay, cool.</p>
+<p>Similarly, the vertex and fragment shaders rely on one another to build the context necessary to create a
+complete shader program: in other words, we must compile them separately, and then explictly link them to
+produce a program object.</p>
 
-<blockquote>
-  <h3 id="notabene">Nota bene:</h3>
-  
-  <p>For the rest of the article, we'll
-  be using the source code from the <a href="#rendering">previous article</a>,
-  and only manipulating the shader source code (the two calls to 
-  <code>gl.shaderSource</code> in <code>init_program</code>). </p>
-</blockquote>
-
-<p><strong>So what state are we sharing between the vertex and fragment shader?</strong></p>
+<p><strong>The Program Object</strong></p>
 
 <p>When we link the vertex and fragment shaders into a complete shader program, we're actually defining
 two important (and interrelated) parts of OpenGL's <strong>rendering pipeline</strong>. </p>
 
-<p><em>Wait, what?</em> Okay, let's put ourselves in the shoes of OpenGL in our program. We've just received
-a draw call. What do we see?</p>
+<p>To explain what that means, we'll walk backwards from the <code>gl.drawArrays</code> call from the last article.</p>
 
 <pre><code>    gl.drawArrays(gl.TRIANGLES, 0, num_vertices)
 </code></pre>
 
-<p>Okay, we know we're supposed to be drawing <code>TRIANGLES</code>. We know that to draw a triangle, we need 3
-vertices, one for each corner of the triangle. We also know that when we get data, we're supposed
-to start slicing it into triangles starting at the first element (<code>0</code> above), and we'll be receiving
-<code>num_vertices</code> vertices. We'll do our best to turn that data into triangles.</p>
-
-<p>Where's that data coming from, though?</p>
+<p>The above line tells OpenGL to draw a series of triangles. It further specifies that we should start
+at the first vertex given to us, and continue until we receive <code>num_vertices</code>. To draw a triangle, 
+OpenGL requires 3 vertices, one for each corner of the triangle to be drawn. </p>
 
 <pre><code>    // enable the first stream of vertex data:
     gl.enableVertexAttribArray(0)
     gl.drawArrays(gl.TRIANGLES, 0, num_vertices)
 </code></pre>
 
-<p>Oh, we've enabled a <code>vertexAttribArray</code> at location 0! Okay. so we should expect one stream of data coming
-in, on the first channel. Okay. What data are we talking about?</p>
+<p>Importantly, when we're sending vertices to OpenGL to draw, we must describe that data in terms of
+"attributes". In this simple case, our vertex data only has one attribute: position. To tell OpenGL
+that we're only sending one attribute per vertex, we call <code>gl.enableVertexAttribArray</code> with <code>0</code>.</p>
 
-<pre><code>    // use data from the following buffer:
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer)
-    gl.enableVertexAttribArray(0)
-    gl.drawArrays(gl.TRIANGLES, 0, num_vertices)
-</code></pre>
+<p>Note that at this point, we still haven't told OpenGL about what our position attribute looks like.
+For example, are we sending it <code>[x, y]</code> coordinates? Or <code>[x, y, z]</code> coordinates? Are these coordinates
+floating point, or are they integers? All OpenGL knows is that it will be receiving a stream of vertices
+with a single attribute.</p>
 
-<p>What does a vertex look like, though? Remember, that buffer just contains a flat array of numbers. Is it a
-stream of <code>x</code>, <code>y</code> values as integers? Or is it <code>x</code>, <code>y</code>, <code>z</code> coordinates in floating point? Oh, woe betide
-that vain, capricious client, telling us to draw triangles without even telling us what her vertex data
-looks like!</p>
-
-<p>Waitaminute.</p>
-
-<pre><code>    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer)
-    // the vertices in `vertex_buffer` look like this:
+<pre><code>    // the vertices in `vertex_buffer` look like this:
     gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(0)
     gl.drawArrays(gl.TRIANGLES, 0, num_vertices)
 </code></pre>
 
+<p>The <code>gl.vertexAttribPointer</code> command describes a particular attribute of the vertex data that we're sending
+to OpenGL. The first argument is the location of the attribute you wish to define &mdash; <code>0</code>, in this case. The second
+argument defines the width of this attribute &mdash; our coordinate data is in <code>x, y, z</code> format, so our width will
+be <code>3</code>. The data we are sending is floating point; hence the third argument, <code>gl.FLOAT</code>. If we were to send integer
+data, we could request that it be normalized to a <code>[-1.0, 1.0]</code> range in the next arguments. Since we don't
+need that, we send <code>false</code>. </p>
+
 <blockquote>
-  <p>A note: the buffer data looks like this:
+  <p>A note: our vertex data looks like this:
   <code>[x, y, z, x, y, z, x, y, z]</code>.
-  We could potentially have a buffer with extra data
-  between vertices, e.g.  <code>[x, y, z, LOL, ROFL, x, y, z, LOL, ROFL]</code>.</p>
+  We could potentially interleave our position data with other data:
+  <code>[x, y, z, LOL, ROFL, x, y, z, LOL, ROFL]</code>.</p>
 </blockquote>
 
-<p>Oh! The vertex data at stream <code>0</code> is <code>3</code> <code>FLOAT</code> elements wide. It's already in floating point format &mdash; we don't
-need to convert them into floats ourselves (the <code>false</code> above). There are <code>0</code> elements in the array data between
-vertices, and the data in the buffer starts at the <code>0</code>th index. <strong>OK!</strong> Let's get drawing. </p>
+<p>The final two arguments define the <code>stride</code> and <code>offset</code> of our data. <code>stride</code> tells OpenGL how many elements
+to skip between sets of attributes &mdash; if we were to interleave our data with <code>[LOL, ROFL]</code> after each <code>[x, y, z]</code>
+element, our <code>stride</code> would be <code>2 * sizeof(float)</code> &mdash; meaning, "after each set of this attribute, skip two float elements." </p>
 
-<p>Wait, hold up.</p>
+<p>Conversely, if we were defining the <code>LOL, ROFL</code> attribute, we would set our stride to <code>3 * sizeof(float)</code> &mdash; to skip the <code>x, y, z</code> elements.
+Also, were we to be defining a <code>LOL, ROFL</code> attribute in that manner, we would have to set our <code>offset</code> &mdash; that is,
+the offset of the first attribute we would like to read out of our buffer &mdash; in this case, we would set it
+to <code>3 * sizeof(float)</code> &mdash; meaning "skip the first three float elements when you start reading out of the buffer."</p>
 
-<p>We're making a two dimensional drawing of these triangles, right? How does the client want us to take
-his three dimensional vertexes and turn them into two dimensional positions on the screen?</p>
+<p>Since we're just sending <code>x, y, z</code> data with no interleaved attributes, we can simply pass <code>0</code> for both the <code>stride</code>
+and <code>offset</code>.</p>
 
-<p>Furthermore, after we know how the client wants us to project those vertices onto the screen, and we're starting to draw
-pixels, what does the client actually want us to put in those pixels? I mean, we'll know we're supposed to draw into 
-these pixels, but what goes in 'em?</p>
+<pre><code>    // in all subsequent commands, tell GL that we're talking about the data
+    // contained in `vertex_buffer`.
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer)
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(0)
+    gl.drawArrays(gl.TRIANGLES, 0, num_vertices)
+</code></pre>
 
-<p><strong>Oh.</strong></p>
+<p>The <code>bindBuffer</code> command tells OpenGL that we're currently drawing data from the <code>vertex_buffer</code>. This command actually
+tells <code>vertexAttribPointer</code> what data it is pointing at. With these four commands, OpenGL has all of the information it
+needs to <strong>grab vertex data</strong>, as well as how to <strong>slice that data into attributes</strong>.</p>
 
-<pre><code>    // use this program to transform the vertices into screen space,
-    // and to determine the RGBA value of the pixels that need drawn.
+<p>However, OpenGL still does not have enough information to actually perform the draw command. Note that in all of the previous
+operations, we never told OpenGL what our attribute data actually means &mdash; the whole <code>x, y, z</code> thing is entirely a client-side
+interpretation of our buffer data at this point. OpenGL just knows that they're tightly packed sets of three floats in a row,
+and that we'd like to draw triangles with them. In particular, it doesn't know what it needs to do to turn those <code>x, y, z</code>
+values into screen-space <code>x, y</code> values (remember, we're drawing to a two dimensional screen!). Further, even if it was able
+to divine our intention and somehow automatically project those <code>x, y, z</code> coordinates onto the screen, when it came time to
+actually blit the triangle onto the screen, it would not know what to put into the pixels in question. Red? Green? Blue? Mauve?
+We certainly haven't told it.</p>
+
+<pre><code>    // tell GL how to project our vertex information, as 
+    // well as what colors to put onto the screen.
     gl.useProgram(program)
     gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer)
     gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
@@ -191,9 +191,12 @@ these pixels, but what goes in 'em?</p>
     gl.drawArrays(gl.TRIANGLES, 0, num_vertices)
 </code></pre>
 
-<p>So we'll use the shader program we defined in <code>init_program</code> in the last lesson to determine how to transform incoming
-vertices onto the screen, and how to determine a color value for pixels that need to be rendered. What does our
-vertex shader look like right now?</p>
+<p>The call to <code>gl.useProgram</code> tells OpenGL what our intentions are, in the form of a program consisting of a vertex shader
+and a fragment shader. The vertex shader tells OpenGL what we'd like to do with the various attributes of our vertex data --
+how to project them onto the screen, for example &mdash; while the fragment shader tells OpenGL what color to put into a given pixel
+in that rasterized triangle.</p>
+
+<p>At the moment, our vertex shader looks like this:</p>
 
 <pre><code>attribute vec3 position;
 
@@ -201,6 +204,17 @@ void main() {
     gl_Position = vec4(position, 1.0);
 }
 </code></pre>
+
+<p>The first line states that this program takes one vertex <strong>attribute</strong> &mdash; <code>position</code> &mdash; as a vector comprised of three floating point
+values. We then define an entry point function named <code>main</code>. It doesn't return anything, but it assigns a value to a special variable
+called <code>gl_Position</code>, which is the translated and projected output position of the vertex in question. <code>gl_Position</code> is defined as a vector
+comprised of four floats. Since we're operating in 2D at the moment, we send our <code>position</code> attribute out with the addition of another float
+to make it match the type of <code>gl_Position</code>. You may recall from the previous article that by default, OpenGL defines the screen space
+by setting <code>-1, -1</code> to the bottom left of the screen, and <code>1, 1</code> to the top right of the screen.</p>
+
+<p><em>GLSL</em>, the language shaders are written in, is largely similar to C. However, it extends the type system with vector and matrix types.
+A brief read of <a href="http://www.opengl.org/wiki/GLSL_Types">this wiki page</a> should prove instructive; for the time being we'll only concern
+ourselves with the <code>vec3</code> type.</p>
 
 <p><canvas id="normal" class="imgright" style="background:#CCC"></p>
 
@@ -270,12 +284,15 @@ void main() {
     })()
 </script>
 
-<p>There's only one "attribute" of the incoming data that we're worried about &mdash; <code>position</code>. We want to hand it back
-to OpenGL directly because we're just drawing 2D graphics, hence the <code>gl_Position = vec4(position, 1.0);</code>. Pretty simple.</p>
+<p>To illustrate how the vertex shader affects rendering, let's change the vertex shader a bit: we'll scale our <code>position</code>
+attribute out down by half. Let's see what effect it has.</p>
 
-<p><strong>Let's mess with it.</strong></p>
+<pre><code>attribute vec3 position;
 
-<p>What happens when we scale that position by <code>0.5</code>?</p>
+void main() {
+    gl_Position = vec4(position * 0.5, 1.0);
+}
+</code></pre>
 
 <p><canvas id="scaled" class="imgright" style="background:#CCC"></p>
 
@@ -345,7 +362,324 @@ to OpenGL directly because we're just drawing 2D graphics, hence the <code>gl_Po
     })()
 </script>
 
-<p>Oh, the triangle got smaller. Awesome. </p><!--/ins-->
+<p>It shrank our triangle! Neat. Next, let's look at the fragment shader:</p>
+
+<pre><code>void main() {
+    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+}
+</code></pre>
+
+<p>That's even simpler than our vertex shader. Again, it's defining an entry point function, <code>main</code>, and assigning
+an RGBA value to a special, global variable named <code>gl_FragColor</code>.</p>
+
+<p>In this case we're assigning "red".</p>
+
+<p>I'd like to use another built-in variable, <code>gl_FragCoord</code>, which contains the screen-space position of the current
+fragment, to demonstrate changing the color of a pixel given it's position on the screen.</p>
+
+<pre><code>// GL_ES wants us to tell it how precise we'd like our floats to be.
+#ifdef GL_ES
+precision highp float;
+#endif
+
+void main() {
+    float x = gl_FragCoord.x * 10.0;
+
+    vec3 rgb = vec3(sin(radians(x)), sin(radians(x + 45.0)), sin(radians(x + 90.0)));
+
+    gl_FragColor = vec4(rgb, 1.0);
+}
+</code></pre>
+
+<p><canvas id="wavy" class="imgright" style="background:#CCC"></p>
+
+<script type="text/javascript">
+
+    (function(){
+    var canvas = document.getElementById('wavy')
+      , gl = canvas.getContext('experimental-webgl')
+
+    // here's our vertex data.
+    var vertices = [
+         -0.5, -0.5, 0
+      ,   0.0,  0.5, 0
+      ,   0.5, -0.5, 0
+    ]
+
+    var frag = [''
+    ,'#ifdef GL_ES'
+    ,'precision highp float;'
+    ,'#endif'
+    ,'void main() {'
+    ,'     float x = gl_FragCoord.x * 10.0;'
+    ,'     vec3 rgb = vec3(sin(radians(x)), sin(radians(x + 45.0)), sin(radians(x + 90.0)));'
+    ,'     gl_FragColor = vec4(rgb, 1.0);'
+    ,'  }'].join('\n')
+
+
+    // create a shader program &mdash; a strategy for
+    // rendering OpenGL primitives &mdash; and send it
+    // to the OpenGL server.
+    function init_program() {
+        var program = gl.createProgram()
+          , vertex_shader = gl.createShader(gl.VERTEX_SHADER)
+          , fragment_shader = gl.createShader(gl.FRAGMENT_SHADER)
+
+        gl.shaderSource(vertex_shader, 'attribute vec3 position;\nvoid main() { gl_Position = vec4( position, 1.0 ); }')
+        gl.shaderSource(fragment_shader, frag)
+        gl.compileShader(vertex_shader)
+        gl.compileShader(fragment_shader)
+
+        gl.attachShader(program, vertex_shader)
+        gl.attachShader(program, fragment_shader)
+        gl.linkProgram(program)
+        return program
+    }
+
+    // send our vertex data to the OpenGL server.
+    function init_vertex() {
+        var buffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW)
+        return buffer
+    }
+
+    function draw(program, vertex) {
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+        // tell OpenGL to use our shader program
+        gl.useProgram(program)
+
+        // tell OpenGL that we're talking about the
+        // vertexes we sent it earlier.
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertex)
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+        gl.enableVertexAttribArray(0)
+
+        // issue a draw command to OpenGL.
+        gl.drawArrays(gl.TRIANGLES, 0, vertices.length/3)
+    }
+
+    var program = init_program()
+      , vertex = init_vertex()
+
+    // set the background color, RGBA (from 0.0 to 1.0).
+    gl.clearColor(0, 0, 0, 1.0)
+    draw(program, vertex)
+
+    })()
+</script>
+
+<p>Very Pink Floyd. An observation about the results: note that the fragment shader we defined only acted
+on those pixels within the triangle. It didn't affect the background color at all. Also, that program we
+defined ran <em>for each pixel in the triangle</em> &mdash; that's a lot of computation to be doing in parallel, and
+it took no time at all. GPUs are pretty cool, huh?</p>
+
+<p>You can play more with fragment shader's on <a href="http://glsl.heroku.com">mrdoob's shader playground</a>. Before we
+finish this article, I'd like to touch on one last topic &mdash; <code>uniform</code>s.</p>
+
+<p>A <code>uniform</code> is a variable that may be present in one or both of your fragment and shader programs. It's declared
+at the top level. It is so named because of the fact that it's value is <code>uniform</code> across all vertex data and all
+fragment data that runs through your complete shader program.</p>
+
+<p>They're really powerful, and really neat.</p>
+
+<p>Let's revist our <code>draw</code> function:</p>
+
+<pre><code>function draw(program, vertex) {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    gl.useProgram(program)
+
+    // find the location of the `uniform` variable named `time`.
+    var time_location = program.time_location || gl.getUniformLocation(program, 'time')
+
+    // cache the location of the `time` uniform on the program
+    // object so we don't have to keep asking OpenGL where it is.
+    program.time_location = time_location
+
+    // set the time to [0, 360 * 1000] (over a second, go from 0 to 360).
+    var time_const = 360 * 1000
+    gl.uniform1f(time_location, (Date.now() % time_const) / time_const)
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertex)
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(0)
+
+    gl.drawArrays(gl.TRIANGLES, 0, vertices.length/3)
+}
+</code></pre>
+
+<p>The function <code>gl.getUniformLocation</code> finds the location of the variable named <code>time</code> within our
+program. Remember from the previous article that we don't wish to send or request extraneous data
+from OpenGL while drawing, so after we get that location, we cache it.</p>
+
+<p>The <code>gl.uniform1f</code> call takes a location and a value to assign to that location. The <code>1</code> denotes that
+we're only sending a single value (not an array), and the <code>f</code> denotes that the value will be regarded as a <code>float</code>.</p>
+
+<p>What can we do with this? Let's add it to our fragment shader:</p>
+
+<pre><code>var vert = [''
+,'#ifdef GL_ES'
+,'precision highp float;'
+,'#endif'
+,'attribute vec3 position;'
+,'uniform float time;'
+,'void main() {'
+,'    gl_Position = vec4(position * (2.0 + sin(radians(time * 5000.0))), 1.0);'
+,'}'
+].join('\n')
+
+#ifdef GL_ES
+precision highp float;
+#endif
+
+uniform float time;
+
+void main() {
+    // put time on a faster cycle.
+    float x = time / 50000.0;
+
+    // put x in the range [0, 2]
+    x = sin(radians(x) + 2.0;
+
+    // and back into [0, 1].
+    x = x / 2.0;
+
+    gl_FragColor = vec4(x, x, x, 1.0);
+}
+</code></pre>
+
+<p>And for fun, we'll add it to our vertex shader. Note that you could omit it from either (or both)
+shaders with no ill consequences.</p>
+
+<pre><code>#ifdef GL_ES
+precision highp float;
+#endif
+
+attribute vec3 position;
+
+uniform float time;
+
+void main() {
+    // multiply time * 50000.0 to get a faster cycle.
+    float x = sin(radians(time * 50000.0)) + 2.0;
+
+    x /= 2.0;
+
+    gl_Position = vec4(position * x, 1.0);
+}
+</code></pre>
+
+<p><canvas id="uniforms" class="imgleft" style="background:#CCC"></p>
+
+<script type="text/javascript">
+
+    (function(){
+    var canvas = document.getElementById('uniforms')
+      , gl = canvas.getContext('experimental-webgl')
+
+    // here's our vertex data.
+    var vertices = [
+         -0.5, -0.5, 0
+      ,   0.0,  0.5, 0
+      ,   0.5, -0.5, 0
+    ]
+
+    var frag = [''
+    ,'#ifdef GL_ES'
+    ,'precision highp float;'
+    ,'#endif'
+    ,'uniform float time;'
+    ,'void main() {'
+    ,'    float x = time * 50000.0;'
+    ,'    x = (sin(radians(x)) + 2.0) / 2.0;'
+    ,'    vec3 rgb = vec3(x, x, x);'
+    ,'    gl_FragColor = vec4(rgb, 1.0);'
+    ,'}'
+    ].join('\n')
+
+    var vert = [''
+    ,'#ifdef GL_ES'
+    ,'precision highp float;'
+    ,'#endif'
+    ,'attribute vec3 position;'
+    ,'uniform float time;'
+    ,'void main() {'
+    ,'    float x = sin(radians(time * 50000.0)) + 2.0;'
+    ,'    x = x / 2.0;'
+    ,'    gl_Position = vec4(position * x, 1.0);'
+    ,'}'
+    ].join('\n')
+
+
+    // create a shader program &mdash; a strategy for
+    // rendering OpenGL primitives &mdash; and send it
+    // to the OpenGL server.
+    function init_program() {
+        var program = gl.createProgram()
+          , vertex_shader = gl.createShader(gl.VERTEX_SHADER)
+          , fragment_shader = gl.createShader(gl.FRAGMENT_SHADER)
+
+        gl.shaderSource(vertex_shader, vert)
+        gl.shaderSource(fragment_shader, frag)
+        gl.compileShader(vertex_shader)
+        gl.compileShader(fragment_shader)
+
+        gl.attachShader(program, vertex_shader)
+        gl.attachShader(program, fragment_shader)
+        gl.linkProgram(program)
+        return program
+    }
+
+    // send our vertex data to the OpenGL server.
+    function init_vertex() {
+        var buffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW)
+        return buffer
+    }
+
+    function draw(program, vertex) {
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+        gl.useProgram(program)
+
+        // find the location of the `uniform` variable named `time`.
+        var time_location = program.time_location || gl.getUniformLocation(program, 'time')
+
+        // cache the location of the `time` uniform on the program
+        // object so we don't have to keep asking OpenGL where it is.
+        program.time_location = time_location
+
+        // set the time to [0, 360 * 1000]
+        var time_const = 360 * 1000
+        gl.uniform1f(time_location, (Date.now() % time_const) / time_const)
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertex)
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+        gl.enableVertexAttribArray(0)
+
+        gl.drawArrays(gl.TRIANGLES, 0, vertices.length/3)
+    }
+
+    var program = init_program()
+      , vertex = init_vertex()
+
+    // set the background color, RGBA (from 0.0 to 1.0).
+    gl.clearColor(0, 0, 0, 1.0)
+    setInterval(function() {
+        draw(program, vertex)
+    }, 33)
+
+
+    })()
+</script>
+
+<p>Et voila. We've transformed our static, boring triangle into an animating one, all with the addition
+of a single uniform that tracks time.</p>
+
+<p><a href="#rendering_2">In the next article</a>, I'd like to cover textures and a few more ways to issue draw calls.</p><!--/ins-->
     </div>
 </div>
 <footer class="centered">

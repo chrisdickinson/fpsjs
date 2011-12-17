@@ -44,6 +44,7 @@ var contents = function(ready) {
         , target = path.join(OUTPUT_DIR, file.replace('.md', '').replace('_', '/'))
       spawn('mkdir', ['-p', target])
         .on('exit', function(code) {
+          console.log('built '+file)
           fs.writeFileSync(path.join(target, 'index.html'), data)
         })
     })
