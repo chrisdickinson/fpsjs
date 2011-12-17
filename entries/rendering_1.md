@@ -1,4 +1,4 @@
-# A brief aside on shaders
+# A (not so) brief aside on shaders
 
 So, in the [last article](#rendering), we drew a triangle to the screen. To do so, we defined
 an array of vertices and sent them to the graphics card, and we defined an enigmatic little

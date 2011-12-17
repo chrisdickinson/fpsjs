@@ -1,0 +1,120 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>FPS.js</title>
+<link rel="stylesheet" href="/media/css/styles.css" />
+<link rel="stylesheet" href="http://yandex.st/highlightjs/6.1/styles/default.min.css" />
+<header class="centered">
+    <div>
+    <h1><a href="/">Building a networked FPS in the browser</a></h1>
+    </div>
+</header>
+<div class="centered">
+    <div id="container">
+        <h1 id="canvasresizingofimages">Canvas Resizing of Images</h1>
+
+<p>Often we'll encounter non-power-of-two textures. It's useful to be able
+to resize these into power of two textures. Luckily, the canvas 2D api
+allows for this eventuality:</p>
+
+<pre><code>function resize_image(image) {
+  var canvas = document.createElement('canvas')
+    , ctxt = canvas.getContext('2d')
+
+  var new_size = Math.max(image.width, image.height)
+
+  if(!(new_size &amp; (new_size - 1)) === 0) {
+    --new_size
+    for(var i = 0; i &lt; 32; i &lt;&lt;= 1)
+      new_size = new_size | new_size &gt;&gt; i
+    new_size += 1
+  } 
+
+  canvas.width = canvas.height = new_size
+
+  ctxt.drawImage(
+      image
+    , 0
+    , 0
+    , image.width
+    , image.height
+    , 0
+    , 0
+    , new_size
+    , new_size
+  )
+
+  return canvas
+}
+</code></pre>
+
+<p><canvas id="original_image" class="imgleft"></canvas>
+<canvas id="new_image" class="imgright"></canvas></p>
+
+<p>The NPOT texture on the left gets distorted into a power of two texture on the right.</p>
+
+<script type="text/javascript">
+  var img = new Image
+    , lhs = document.getElementById('original_image')
+    , rhs = document.getElementById('new_image')
+
+  function resize_image(image, cvs) {
+    var canvas = cvs || document.createElement('canvas')
+      , ctxt = canvas.getContext('2d')
+
+    var new_size = Math.max(image.width, image.height)
+
+    if(!(new_size & (new_size - 1)) === 0) {
+      --new_size
+      for(var i = 0; i < 32; i <<= 1)
+        new_size = new_size | new_size >> i
+      new_size += 1
+    } 
+
+    canvas.width = canvas.height = new_size
+
+    ctxt.drawImage(
+        image
+      , 0
+      , 0
+      , image.width
+      , image.height
+      , 0
+      , 0
+      , new_size
+      , new_size
+    )
+
+    return canvas
+  }
+
+  img.src = '/media/img/npot.jpg'
+  img.onload = function() {
+    var lhs_ctxt = lhs.getContext('2d')
+
+    lhs.width = img.width
+    lhs.height = img.height 
+    lhs_ctxt.drawImage(img, 0, 0, img.width, img.height)
+
+    resize_image(img, rhs)
+  }
+</script><!--/ins-->
+    </div>
+</div>
+<footer class="centered">
+    <div>
+        <a href="http://github.com/chrisdickinson/" target="_blank">
+            <img src="https://secure.gravatar.com/avatar/f70956bdb907c2f8b39ff624ea925ccd?s=140" />
+        </a>
+        <aside>
+        <p><em>Chris Dickinson</em> is a hacker living in Lawrence, KS.
+        <p>He enjoys drawing, coffee, Starcraft, and chatting about JavaScript.
+        <p>You can follow him <a href="http://twitter.com/isntitvacant/">on twitter</a> or
+           <a href="http://github.com/chrisdickinson/">on github</a>. He&rsquo;d very much appreciate
+           it!
+        </aside>
+    </div>
+</footer>
+<script src="/media/js/showdown.js"></script>
+<script src="/media/js/highlight.js"></script>
+<script>[].slice.call(document.getElementsByTagName('code')).forEach(function(el) { hljs.highlightBlock(el, '  ') })</script>
+<script src="/media/js/page.js"></script>
