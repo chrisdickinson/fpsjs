@@ -4,7 +4,7 @@ In the last lesson, we talked at length about the OpenGL rendering pipeline; tou
 on **vertex attributes** and what they mean to our shader program. We also defined what
 the **vertex and fragment shaders** contribute to the rendering path -- and learned that it's
 fairly straightforward to send uniform (unchanging) data into the rendering path that can
-be access by both the vertex and fragment shaders. In particular, we sent a floating
+be accessed by both the vertex and fragment shaders. In particular, we sent a floating
 point uniform representing the current progress through a period (3 seconds), and used
 it to bounce the triangle in and out; as well as to fade from white to black and back to
 white. We marveled at how many **parallel** operations our GPU is capapble of performing.
