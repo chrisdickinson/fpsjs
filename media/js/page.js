@@ -1,5 +1,5 @@
-var ENTRY_PATH = '/entries/'
-  , OUT_PATH = '/posts/'
+var ENTRY_PATH = '/fpsjs/entries/'
+  , OUT_PATH = '/fpsjs/posts/'
 
 function add_class(el, classname) {
   el.classList.add(classname)
