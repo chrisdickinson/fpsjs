@@ -41,8 +41,16 @@ you have a better solution available, please submit it to me as a github pull re
 Our hero describes the basic structure of the project, along with some pitfalls in the process.</p></li>
 <li><p><a href="#game-loops">Game loops</a>
 How does JavaScript affect how we write games? How does one even go about structuring a game?</p></li>
-<li><p><a href="#rendering">Rendering Basics</a>
-Let's chat about how rendering works with OpenGL, and what we're going to do about it.</p></li>
+<li><p><strong>Rendering with WebGL</strong>
+Let's chat about how rendering works with OpenGL.</p>
+
+<ul><li><a href="#rendering">Part 1</a> A brief introduction to WebGL. We draw our first triangle!</li>
+<li><a href="#rendering_1">Part 2</a> What are shader programs? What can they do for us? How do draw calls work?</li>
+<li><p><a href="#rendering_2">Part 3</a> How to load textures &mdash; we build a fairly general purpose <code>load_texture</code> function here.</p>
+
+<ul><li><a href="#canvas-resizing">Using Canvases to Resize Images</a> An aside on using 2D canvas to resize our irregularly sized textures
+into a nice, power-of-two format for WebGL.</li></ul></li>
+<li><p><a href="#rendering_3">Part 4</a> Primitives and <code>ELEMENT_ARRAY_BUFFERS</code>; we discuss them here. We'll start to get 3D here, as well. </p></li></ul></li>
 <li><p><a href="#networking">Networking Basics</a>
 A quick overview of socket.io and what we'll do with that.</p></li>
 <li><p><a href="#web-workers">Web workers</a>

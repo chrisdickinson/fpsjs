@@ -760,6 +760,48 @@ and point the second attribute channel at it. This ends up looking like the foll
 We've described our **sources** and **formats** to OpenGL, and it will draw from both of those buffers to stream vertex attribute
 information to our vertex shader.
 
+There are tradeoffs with both approaches; the first approach might improve data locality due to all of the data streaming out of a
+single buffer source, but any change to any attribute in a model will require a resend of all of the data (changed or not) to OpenGL.
+For example, this would make developing authoring tools somewhat difficult -- data is expected to change on a fairly constant basis,
+and in that case it might be easier to keep attributes in separate buffers. Further, we may wish to export attributes as separate files,
+with the aim of reducing load time: if a model's texture coordinates changes but it's vertices do not, we could build a loader that
+only fetches changes attributes of the model at runtime.
 
+That said, it would be fairly trivial to take these separate attributes and interleave them in our game; which would give us the best
+of both worlds -- ease of editing in our authoring tools, and better data locality while actually running the game.
 
+In either case, we will be modifying our vertex shader to accept the new vertex attribute. We'll wish to accept a new `attribute`,
+`a_texcoord`:
 
+    #ifdef GL_ES
+    precision highp float;
+    #endif
+    
+
+    // accept a new attribute: note that we've started 
+    // to prefix our attributes with `a_`.
+    attribute vec3 a_position;
+    attribute vec2 a_texcoord;
+
+    // we'll also start prefixing our varying variables with `v_`:
+    varying vec2 v_texcoord;
+
+    uniform float time;
+
+    void main() {
+        float x = sin(radians(time * 360.0)) + 2.0;
+
+        x /= 2.0;
+ 
+        gl_Position = vec4(a_position * x, 1.0);
+
+        // pass the new attribute into the fragment shader:
+        v_texcoord = a_texcoord;
+    }
+
+**Note that our existing fragment shader already accepts a `varying vec2` for texture coordinates**; we'll simple have to rename that variable
+from `texcoord` to `v_texcoord` to match our revised vertex shader.
+
+In the [next article](#rendering_3), I'd like to cover a few more nuances of draw calls -- specifically, using index arrays to cut down
+the amount of vertex data we need to send to the GPU, and we'll touch on another primitive drawing mode to further reduce the amount of
+vertex data we need to send.

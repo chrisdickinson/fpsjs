@@ -1,0 +1,50 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>FPS.js</title>
+<link rel="stylesheet" href="/media/css/styles.css" />
+<link rel="stylesheet" href="http://yandex.st/highlightjs/6.1/styles/default.min.css" />
+<header class="centered">
+    <div>
+    <h1><a href="/">Building a networked FPS in the browser</a></h1>
+    </div>
+</header>
+<div class="centered">
+    <div id="container">
+        <h1 id="cameraselementarraybuffersandprimitives">Cameras, element array buffers, and primitives.</h1>
+
+<p>Up until this article, we've been satisfied with drawing a simple, two-dimensional triangle to the screen.
+By this point we've got a fairly complete mental model of what resources we need to draw an element to a screen. 
+There are three final concepts I'd like to introduce at this point: <strong>primitives</strong>, <strong>view matrices</strong>, and 
+<strong>element array buffers</strong>. By the end of the article, we should be able to create a general purpose resource loader,
+and define a format for our resources. We'll also start using <a href="http://paulirish.com/2011/requestanimationframe-for-smart-animating/"><code>requestAnimFrame</code></a> to schedule our draw call (up until now, we've used <code>setInterval</code>). The linked article does a much
+better job of explaining the benefits of this approach; so we won't worry ourselves overly much with it at the moment.</p>
+
+<h2 id="primitives">Primitives</h2>
+
+<h2 id="elementarraybuffers">Element Array Buffers</h2>
+
+<h2 id="viewmatrices">View Matrices</h2>
+
+<h3 id="asimplecameraclass">A simple camera class</h3>
+
+<h3 id="ourresourceformatandloader">Our resource format and loader</h3><!--/ins-->
+    </div>
+</div>
+<footer class="centered">
+    <div>
+        <a href="http://github.com/chrisdickinson/" target="_blank">
+            <img src="https://secure.gravatar.com/avatar/f70956bdb907c2f8b39ff624ea925ccd?s=140" />
+        </a>
+        <aside>
+        <p><em>Chris Dickinson</em> is a hacker living in Lawrence, KS.
+        <p>He enjoys drawing, coffee, Starcraft, and chatting about JavaScript.
+        <p>You can follow him <a href="http://twitter.com/isntitvacant/">on twitter</a> or
+           <a href="http://github.com/chrisdickinson/">on github</a>. He&rsquo;d very much appreciate
+           it!
+        </aside>
+    </div>
+</footer>
+<script src="/media/js/showdown.js"></script>
+<script src="/media/js/highlight.js"></script>
+<script>[].slice.call(document.getElementsByTagName('code')).forEach(function(el) { hljs.highlightBlock(el, '  ') })</script>
+<script src="/media/js/page.js"></script>

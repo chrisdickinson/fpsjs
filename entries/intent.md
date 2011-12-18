@@ -31,8 +31,17 @@ Oh yeah, and I apologize for the occasional weird drawing. I can't help it.
 * [Game loops](#game-loops)
   How does JavaScript affect how we write games? How does one even go about structuring a game?
 
-* [Rendering Basics](#rendering)
-  Let's chat about how rendering works with OpenGL, and what we're going to do about it.
+* **Rendering with WebGL**
+  Let's chat about how rendering works with OpenGL.
+
+  * [Part 1](#rendering) A brief introduction to WebGL. We draw our first triangle!
+  * [Part 2](#rendering_1) What are shader programs? What can they do for us? How do draw calls work?
+  * [Part 3](#rendering_2) How to load textures -- we build a fairly general purpose `load_texture` function here.
+
+        * [Using Canvases to Resize Images](#canvas-resizing) An aside on using 2D canvas to resize our irregularly sized textures
+          into a nice, power-of-two format for WebGL.
+
+  * [Part 4](#rendering_3) Primitives and `ELEMENT_ARRAY_BUFFERS`; we discuss them here. We'll start to get 3D here, as well. 
  
 * [Networking Basics](#networking)
   A quick overview of socket.io and what we'll do with that.
