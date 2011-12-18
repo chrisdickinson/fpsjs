@@ -27,6 +27,9 @@ allows for this eventuality:</p>
 }
 
 function resize_image(image) {
+  if(image.width === image.height &amp;&amp; (image.width &amp; (image.width - 1)) === 0)
+    return image
+
   var canvas = document.createElement('canvas')
     , ctxt = canvas.getContext('2d')
     , width = next_power_of_two(image.width)
@@ -53,6 +56,45 @@ function resize_image(image) {
   return canvas
 }
 </code></pre>
+
+<p>A note about what we're attempting to accomplish here: we'd like to scale our non-power-of-two
+texture to a square, power of two-sized image. The first step is to determine whether or
+not our texture is square, which is a simple <code>image.width === image.height</code>. Next, we determine
+whether or not that size is a power of two:</p>
+
+<pre><code>(image.width &amp; (image.width - 1)) === 0 
+</code></pre>
+
+<p>Let's take a look at what this actually performs for some example numbers:</p>
+
+<pre><code>256: 100000000 &amp; 011111111 === 000000000 (power of two!) 
+192: 011000000 &amp; 010111111 === 010000000 (not a power of two!)
+</code></pre>
+
+<p>Looks good. Next, we need to find the next power of two:</p>
+
+<pre><code>--size
+for(var i = 1; i &lt; 32; i &lt;&lt;= 1)
+    size = size | size &gt;&gt; i
+</code></pre>
+
+<p>Unrolled, the algorithm looks like the following:</p>
+
+<pre><code>--val                       // 192 - 1 = 191    (010111111)
+val = val | (val &gt;&gt; 1)      // 191 | 95 = 255   (011111111)
+val = val | (val &gt;&gt; 2)      // 255 | 63 = 255   (011111111)
+val = val | (val &gt;&gt; 4)      // .. from here out val == 255
+val = val | (val &gt;&gt; 8)
+val = val | (val &gt;&gt; 16)
+++val                       // 255 + 1 === 256 (011111111 + 000000001 === 100000000)
+</code></pre>
+
+<p>In essence, we're attempting to set every bit from the first <code>1</code> bit to the last bit to <code>1</code>, and
+then we add <code>1</code> to the result to get a power of two.</p>
+
+<p>Our function then takes the next power two of each side, and then attempts to determine which power
+of two results in less distance from the original size, and sets the canvas we're rendering into to that
+power of two.</p>
 
 <p><canvas id="original_image" class="imgleft"></canvas>
 <canvas id="new_image" class="imgright"></canvas></p>
