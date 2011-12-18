@@ -732,7 +732,66 @@ function load_texture(path, options, ready) {
 } 
 </code></pre>
 
-<h2 id="addingattributestoourvertexstream">Adding attributes to our vertex stream</h2><!--/ins-->
+<h2 id="addingattributestoourvertexstream">Adding attributes to our vertex stream</h2>
+
+<p>This is probably the trickiest of the three problems listed above; but it's not insurmountable.
+You may recall in the previous article that we defined the following in our draw call:</p>
+
+<pre><code>    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer)
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(0)
+    gl.drawArrays(gl.TRIANGLES, 0, num_vertices)
+</code></pre>
+
+<p>We touched on the fact that <code>vertexAttribArray</code> would enable the first stream of attributes, defined
+by the previous calls to <code>vertexAttribPointer</code> and <code>bindBuffer</code>. In a sense, we were defining the <code>source</code>
+of the data, and the <code>format</code> of the data coming through that first stream.</p>
+
+<p>We now want to describe a separate attribute of our vertex data &mdash; the texture coordinate for a given vertex.
+There are two ways that we haven't defined <strong>where</strong> we want it to come from, nor have we defined the <strong>format</strong>
+of that data.</p>
+
+<p>Since we are drawing two dimensional textures onto flat planes, we really only need two coordinates to define a
+texture coordinate &mdash; <code>x, y</code>. We sample a pixel out of a texture in our fragment shader using <code>texture2D(float x, float y)</code>.
+The coordinate system OpenGL uses for textures is basically the same as our screen coordinates: that is, <code>0, 0</code>
+is the bottom left of the texture, while <code>1, 1</code> is the top right of our texture, regardless of the dimensions of the
+texture. That gives us our <strong>format</strong>, by and large, but doesn't say anything about our <strong>source</strong>.</p>
+
+<p>We actually have <strong>two</strong> options for defining our source. I mentioned in the last article that the call to
+<code>vertexAttribPointer</code> took two final arguments, <code>stride</code> and <code>offset</code>. These allow us to use data from a single
+buffer for all of our vertex attributes; e.g., our data could look like <code>x, y, z, texture x, texture y, x, y, z, texture x, texture y</code>,
+and so on. If we go this route, our <code>vertexAttribPointer</code>'s stride and offset would be <code>3 * 4</code>: floats are <code>4</code> bytes
+wide, and we are skipping <code>3</code> floats from our buffer to get to our texture coordinates. Our draw call would look like
+this:</p>
+
+<pre><code>    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer)
+    // there are now elements to skip in our position information, hence the `2 * 4`
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 2 * 4, 0)
+    gl.enableVertexAttribArray(0)
+
+    // skip 3 floats, starting 3 floats in.
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 3 * 4, 3 * 4)
+    gl.enableVertexAttribArray(1)
+
+    gl.drawArrays(gl.TRIANGLES, 0, num_vertices)
+</code></pre>
+
+<p>Alternatively, we could put all of our texture coordinate data into another buffer &mdash; <code>texture x, texture y, texture x, texture y</code>,
+and point the second attribute channel at it. This ends up looking like the following:</p>
+
+<pre><code>    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer)
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(0)
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, texture_coordinate_buffer)
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(1)
+
+    gl.drawArrays(gl.TRIANGLES, 0, num_vertices)
+</code></pre>
+
+<p>We've described our <strong>sources</strong> and <strong>formats</strong> to OpenGL, and it will draw from both of those buffers to stream vertex attribute
+information to our vertex shader.</p><!--/ins-->
     </div>
 </div>
 <footer class="centered">

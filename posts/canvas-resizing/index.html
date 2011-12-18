@@ -16,21 +16,28 @@
 to resize these into power of two textures. Luckily, the canvas 2D api
 allows for this eventuality:</p>
 
-<pre><code>function resize_image(image) {
+<pre><code>function next_power_of_two(size) {
+  if((size &amp; (size - 1)) !== 0) {
+    --size
+    for(var i = 1; i &lt; 32; i &lt;&lt;= 1)
+      size = size | size &gt;&gt; i
+    size += 1
+  } 
+  return size
+}
+
+function resize_image(image) {
   var canvas = document.createElement('canvas')
     , ctxt = canvas.getContext('2d')
+    , width = next_power_of_two(image.width)
+    , height = next_power_of_two(image.height)
 
-  var new_size = Math.max(image.width, image.height)
-
-  if(!(new_size &amp; (new_size - 1)) === 0) {
-    --new_size
-    for(var i = 0; i &lt; 32; i &lt;&lt;= 1)
-      new_size = new_size | new_size &gt;&gt; i
-    new_size += 1
-  } 
+  var new_size = Math.min(
+    Math.abs(width - image.width)
+  , Math.abs(height - image.height)
+  ) === width - image.width ? width : height
 
   canvas.width = canvas.height = new_size
-
   ctxt.drawImage(
       image
     , 0
@@ -57,21 +64,28 @@ allows for this eventuality:</p>
     , lhs = document.getElementById('original_image')
     , rhs = document.getElementById('new_image')
 
+    function next_power_of_two(size) {
+      if((size & (size - 1)) !== 0) {
+        --size
+        for(var i = 1; i < 32; i <<= 1)
+          size = size | size >> i
+        size += 1
+      } 
+      return size
+    }
+
   function resize_image(image, cvs) {
     var canvas = cvs || document.createElement('canvas')
-      , ctxt = canvas.getContext('2d')
+        , ctxt = canvas.getContext('2d')
+        , width = next_power_of_two(image.width)
+        , height = next_power_of_two(image.height)
 
-    var new_size = Math.max(image.width, image.height)
-
-    if(!(new_size & (new_size - 1)) === 0) {
-      --new_size
-      for(var i = 0; i < 32; i <<= 1)
-        new_size = new_size | new_size >> i
-      new_size += 1
-    } 
+      var new_size = Math.min(
+        Math.abs(width - image.width)
+      , Math.abs(height - image.height)
+      ) === width - image.width ? width : height
 
     canvas.width = canvas.height = new_size
-
     ctxt.drawImage(
         image
       , 0
