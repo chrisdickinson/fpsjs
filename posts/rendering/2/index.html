@@ -12,7 +12,7 @@
     <div id="container">
         <h1 id="texturesanddrawcalls">Textures and draw calls</h1>
 
-<p>In the last lesson, we talked at length about the OpenGL rendering pipeline; touching
+<p>In the <a href="#rendering_1">last lesson</a>, we talked at length about the OpenGL rendering pipeline; touching
 on <strong>vertex attributes</strong> and what they mean to our shader program. We also defined what
 the <strong>vertex and fragment shaders</strong> contribute to the rendering path &mdash; and learned that it's
 fairly straightforward to send uniform (unchanging) data into the rendering path that can
@@ -757,7 +757,7 @@ The coordinate system OpenGL uses for textures is basically the same as our scre
 is the bottom left of the texture, while <code>1, 1</code> is the top right of our texture, regardless of the dimensions of the
 texture. That gives us our <strong>format</strong>, by and large, but doesn't say anything about our <strong>source</strong>.</p>
 
-<p>We actually have <strong>two</strong> options for defining our source. I mentioned in the last article that the call to
+<p>We actually have <strong>two</strong> options for defining our source. I mentioned in the <a href="#rendering_1">last article</a> that the call to
 <code>vertexAttribPointer</code> took two final arguments, <code>stride</code> and <code>offset</code>. These allow us to use data from a single
 buffer for all of our vertex attributes; e.g., our data could look like <code>x, y, z, texture x, texture y, x, y, z, texture x, texture y</code>,
 and so on. If we go this route, our <code>vertexAttribPointer</code>'s stride and offset would be <code>3 * 4</code>: floats are <code>4</code> bytes

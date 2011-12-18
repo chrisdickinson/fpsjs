@@ -1,6 +1,6 @@
 # Textures and draw calls
 
-In the last lesson, we talked at length about the OpenGL rendering pipeline; touching
+In the [last lesson](#rendering_1), we talked at length about the OpenGL rendering pipeline; touching
 on **vertex attributes** and what they mean to our shader program. We also defined what
 the **vertex and fragment shaders** contribute to the rendering path -- and learned that it's
 fairly straightforward to send uniform (unchanging) data into the rendering path that can
@@ -726,7 +726,7 @@ The coordinate system OpenGL uses for textures is basically the same as our scre
 is the bottom left of the texture, while `1, 1` is the top right of our texture, regardless of the dimensions of the
 texture. That gives us our **format**, by and large, but doesn't say anything about our **source**.
 
-We actually have **two** options for defining our source. I mentioned in the last article that the call to
+We actually have **two** options for defining our source. I mentioned in the [last article](#rendering_1) that the call to
 `vertexAttribPointer` took two final arguments, `stride` and `offset`. These allow us to use data from a single
 buffer for all of our vertex attributes; e.g., our data could look like `x, y, z, texture x, texture y, x, y, z, texture x, texture y`,
 and so on. If we go this route, our `vertexAttribPointer`'s stride and offset would be `3 * 4`: floats are `4` bytes
