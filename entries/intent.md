@@ -12,7 +12,7 @@ a "How To" guide. There will be missteps, perhaps quite frequently. In one artic
 that makes (or made) sense to me at the time; and in a later article I may rebut it. That said, when that happens,
 I'll include a link to the new article in the old article, alongside a brief explanation of why I was wrong.
 
-![right](/media/img/mpm.png) A second caveat: I'm not a game programmer by trade -- quite the opposite, really: I'm a web developer working
+![right](/fpsjs/media/img/mpm.png) A second caveat: I'm not a game programmer by trade -- quite the opposite, really: I'm a web developer working
 at Mediaphormedia in Lawrence, Kansas. My degree is in liberal arts; I've only had a single full year of 
 calculus courses, and that was over six years ago. In short: I might be wrong. I'm relying on you, dear reader,
 to [let me know where I'm incorrect](http://github.com/chrisdickinson/fpsjs/issues), and I humbly ask that if

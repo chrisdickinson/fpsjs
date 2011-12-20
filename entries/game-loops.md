@@ -1,6 +1,6 @@
 # Games from a thousand miles up
 
-![plainright](/media/img/gameloop.png) So what does a game look like from a high level? How does this look in JavaScript?
+![plainright](/fpsjs/media/img/gameloop.png) So what does a game look like from a high level? How does this look in JavaScript?
 All a game is doing is looping endlessly, checking the input received, advancing the game state using that input
 by some unit of time -- usually the elapsed milliseconds since the last time through the loop -- and then rendering
 the resulting scene.

@@ -11,7 +11,7 @@ white. We marveled at how many **parallel** operations our GPU is capapble of pe
 
 What now?
 
-![left](/media/img/painterly.jpg)
+![left](/fpsjs/media/img/painterly.jpg)
 
 Take a look at these screenshots from Minecraft. They're using a [custom texture pack](http://painterlypack.net/)
 to change the look and feel of the game.
@@ -290,7 +290,7 @@ Okay, now our `draw` call will accept a texture object. Let's modify our loop:
 
     var program = init_program()
       , vertex = init_vertex()
-      , texture = load_texture('/media/img/painterly.jpg')
+      , texture = load_texture('/fpsjs/media/img/painterly.jpg')
 
     gl.clearColor(0, 0, 0, 1.0)
     setInterval(function() {
@@ -517,7 +517,7 @@ And our fragment shader:
 
     var program = init_program()
       , vertex = init_vertex()
-      , texture = load_texture('/media/img/painterly.jpg')
+      , texture = load_texture('/fpsjs/media/img/painterly.jpg')
 
     gl.clearColor(0, 0, 0, 1.0)
     setInterval(function() {
