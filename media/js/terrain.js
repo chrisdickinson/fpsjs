@@ -31,7 +31,7 @@ function Camera(cvs) {
   this.y = -10
   this.z = 0
 
-  this.r_x = -Math.PI * 2
+  this.r_x = 0.0
   this.r_y = Math.PI 
 
   this.canvas = cvs
