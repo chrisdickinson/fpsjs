@@ -6,8 +6,7 @@
 
 <script type="text/javascript">
   onload = function() {
-    var size = ~~prompt('what size?')
-      , cvs = document.getElementById('canvas')
-    start(cvs, size)
+    var cvs = document.getElementById('canvas')
+    start(cvs, 128)
   }
 </script>
