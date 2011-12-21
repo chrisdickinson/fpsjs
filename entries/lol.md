@@ -7,6 +7,6 @@
 <script type="text/javascript">
   onload = function() {
     var cvs = document.getElementById('canvas')
-    start(cvs, 128)
+    start(cvs, 512)
   }
 </script>

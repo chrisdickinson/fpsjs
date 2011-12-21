@@ -12,9 +12,6 @@ if(typeof window !== 'undefined')
           };
   })();
 
-
-
-
 Function.prototype.shader = function() {
   var src = ''+this
     , start = src.indexOf('/*')+2
@@ -28,13 +25,17 @@ var sin = Math.sin
 
 function Camera(cvs) {
   this.x = 0
-  this.y = -10
+  this.y = -18
   this.z = 0
 
   this.r_x = 0.0
   this.r_y = Math.PI 
 
   this.canvas = cvs
+
+  // 30mps
+  this.speed = 30
+  this.wasd = {}
 
   this.model_matrix = mat4.create()
   this.projection_matrix = mat4.create()
@@ -72,19 +73,35 @@ Camera.events.keydown = function(ev) {
   if(!~Camera.KEYS.indexOf(ev.keyCode))
     return
 
+  this.wasd[ev.keyCode] = true
   ev.preventDefault()
+}
 
-  var rot_y = -this.r_y
-  if(ev.keyCode === 65 || ev.keyCode === 68) {
-    rot_y += Pi/2
-  }
+Camera.events.keyup = function(ev) {
+  if(!~Camera.KEYS.indexOf(ev.keyCode))
+    return
 
-  if(ev.keyCode === 68 || ev.keyCode === 83) {
-    rot_y += Pi
-  }
+  this.wasd[ev.keyCode] = false
+  ev.preventDefault()
+}
 
-  this.x += sin(rot_y)
-  this.z += cos(rot_y)
+Camera.prototype.tick = function(dt) {
+  var self = this
+  ;[65,68,83,87].forEach(function(key) {
+    if(self.wasd[key]) {
+      var rot_y = -self.r_y
+      if(key === 65 || key === 68) {
+        rot_y += Pi/2
+      }
+
+      if(key === 68 || key === 83) {
+        rot_y += Pi
+      }
+
+      self.x += sin(rot_y) * dt * self.speed
+      self.z += cos(rot_y) * dt * self.speed
+    }
+  }) 
 }
 
 Camera.prototype.setup_events = function() {
@@ -247,6 +264,9 @@ Resources.prototype.build_vertices = function(size) {
 }
 
 Resources.prototype.build_indices = function(size) {
+
+  size = 128
+
   var indices = []
     , gl = this.gl
     , buffer = gl.createBuffer()
@@ -281,7 +301,6 @@ Resources.prototype.build_indices = function(size) {
 
   indices = new TypedArray(indices)
 
-  console.log(TypedArray)
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer)
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW)
 
@@ -296,7 +315,7 @@ Resources.prototype.build_indices = function(size) {
 Resources.prototype.build_heightmap = function(size) {
   size = next_power_of_two(size)
   var cvs = document.createElement('canvas')
-  return terrainGeneration(cvs, size)
+  return terrainGeneration(cvs, size, 0 * Pi/180, 30*Pi/180)
 }
 
 function init (canvas, size, ready) {
@@ -310,8 +329,8 @@ function init (canvas, size, ready) {
     , wait = []
 
   camera.setup_events()
-  vertices = resources.build_vertices(size)
-  elements = resources.build_indices(size)
+  vertices = resources.build_vertices(128)
+  elements = resources.build_indices(128)
   heightmap = resources.load_texture(resources.build_heightmap(size), {mag:'nearest', min:'nearest'})
 
   var store = function(what) {
@@ -322,8 +341,8 @@ function init (canvas, size, ready) {
       wait.length === 0 && ready(gl, resources, camera, vertices, elements, heightmap, tiles)
     } 
   }
-  resources.fetch_load_texture('/fpsjs/media/img/terrain_1.jpg', store('tile_0'))
-  resources.fetch_load_texture('/fpsjs/media/img/terrain_0.jpg', store('tile_1'))
+  resources.fetch_load_texture('/fpsjs/media/img/terrain_1.jpg', store('tile_1'))
+  resources.fetch_load_texture('/fpsjs/media/img/terrain_0.jpg', store('tile_0'))
   resources.fetch_load_texture('/fpsjs/media/img/terrain_2.png', store('tile_2'))
 
 }
@@ -336,30 +355,39 @@ var terrain_vertex_shader = function() {/*
   uniform sampler2D u_heightmap;
   uniform float u_height;
   uniform float u_size;
+  uniform int   u_patch_offset_x;
+  uniform int   u_patch_offset_y;
 
   uniform mat4 u_model_matrix;
   uniform mat4 u_projection_matrix;
 
   varying vec2 v_texcoord;
   varying float v_height;
+  varying float v_shadow;
 
   void main(void) {
-    float h_0_0 = texture2D(u_heightmap, a_position/u_size).x;
-    float h_1_0 = texture2D(u_heightmap, (a_position+vec2(1.0, 0.0))/u_size).x;
-    float h_1_1 = texture2D(u_heightmap, (a_position+vec2(1.0, 1.0))/u_size).x;
-    float h_0_1 = texture2D(u_heightmap, (a_position+vec2(0.0, 1.0))/u_size).x;
+    vec2 position = a_position + vec2(127.0 * float(u_patch_offset_x), 127.0 * float(u_patch_offset_y)); 
+    float size = u_size;
 
-    float height = (h_0_0 + h_1_0 + h_1_1 + h_0_1) / 4.0;
+    vec4 h_0_0 = texture2D(u_heightmap, position/size);
+    vec4 h_1_0 = texture2D(u_heightmap, (position+vec2(1.0, 0.0))/size);
+    vec4 h_1_1 = texture2D(u_heightmap, (position+vec2(1.0, 1.0))/size);
+    vec4 h_0_1 = texture2D(u_heightmap, (position+vec2(0.0, 1.0))/size);
+
+    vec4 agg = (h_0_0 + h_1_0 + h_1_1 + h_0_1) / 4.0;
+    float height = agg.x;
+    float shadow = agg.y;
 
     gl_Position = u_projection_matrix * u_model_matrix * vec4(
-      a_position.x/2.0,
+      position.x / 2.0,
       height * u_height,
-      a_position.y/2.0,
+      position.y / 2.0,
       1.0
     );
 
-    v_height = height; 
-    v_texcoord = a_position / (u_size / 16.0);
+    v_height = height;
+    v_shadow = shadow;
+    v_texcoord = a_position / 16.0;
   }
 */}.shader()
 
@@ -368,6 +396,7 @@ var terrain_fragment_shader = function() {/*
 
   varying vec2 v_texcoord;
   varying float v_height;
+  varying float v_shadow;
 
   uniform sampler2D u_tile_0;
   uniform sampler2D u_tile_1;
@@ -382,8 +411,8 @@ var terrain_fragment_shader = function() {/*
     vec4 tile_0_tex = texture2D(u_tile_0, v_texcoord);
     vec4 tile_1_tex = texture2D(u_tile_1, v_texcoord);
 
-    gl_FragColor = tile_0_tex * tile_0 +
-                   tile_1_tex * tile_1;
+    gl_FragColor = (tile_0_tex * tile_0 +
+                   tile_1_tex * tile_1) - vec4(v_shadow, v_shadow, v_shadow, 0.0);
   }
 */}.shader()
 
@@ -391,18 +420,28 @@ function start (canvas, size) {
   init(canvas, size, function(gl, resources, camera, vertices, elements, heightmap, tiles) {
     var program = resources.load_shader(terrain_vertex_shader, terrain_fragment_shader)
       , uniforms = [ 'u_heightmap', 'u_height', 'u_size', 'u_model_matrix', 'u_projection_matrix'
-                   , 'u_tile_0', 'u_tile_1', 'u_tile_2'].reduce(function(lhs, rhs) {
+                   , 'u_tile_0', 'u_tile_1', 'u_tile_2', 'u_patch_offset_x', 'u_patch_offset_y'].reduce(function(lhs, rhs) {
                       lhs[rhs] = gl.getUniformLocation(program, rhs)
                       return lhs
                    }, {})
 
     var pre = document.createElement('pre')
+      , now = Date.now()
+      , new_now
+      , dt
+
     document.body.appendChild(pre)
  
-    console.log(uniforms) 
     gl.clearColor(0, 0, 0, 1.0)
     gl.enable(gl.DEPTH_TEST)
     requestAnimFrame(function draw() {
+
+      new_now = Date.now()
+      dt = (new_now - now) / 1000
+      now = new_now
+    
+      camera.tick(dt)
+
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
       gl.useProgram(program)
 
@@ -422,13 +461,20 @@ function start (canvas, size) {
       gl.bindTexture(gl.TEXTURE_2D, tiles.tile_2)
       gl.uniform1i(uniforms.u_tile_2, 3)
 
-      gl.uniform1f(uniforms.u_height, 8)
+      gl.uniform1f(uniforms.u_height, 16.0)
       gl.uniform1f(uniforms.u_size, size)
 
       gl.uniformMatrix4fv(uniforms.u_model_matrix, false, camera.get_model_matrix())
       gl.uniformMatrix4fv(uniforms.u_projection_matrix, false, camera.get_projection_matrix())
+
       vertices.enable()
-      elements.draw()
+      for(var x = 0, len = size/128; x < len; ++x) {
+        gl.uniform1i(uniforms.u_patch_offset_x, x)
+        for(var y = 0; y < len; ++y) {
+          gl.uniform1i(uniforms.u_patch_offset_y, y)
+          elements.draw()
+        }
+      }
 
       pre.innerText = ['x','y','z','r_x','r_y'].map(function(key) {
         return key + ':\t\t' + camera[key].toFixed(2)

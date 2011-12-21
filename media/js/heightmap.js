@@ -1,4 +1,4 @@
-function terrainGeneration(cvs, size){
+function terrainGeneration(cvs, size, sun_r_x, sun_r_y){
 	// Set these variables to adjust how the map is generated
 	var mapDimension = size,
 		unitSize = 2, // Power of 2
@@ -151,10 +151,50 @@ function terrainGeneration(cvs, size){
 		r = 0, g = 0, b = 0, gamma = 500,
 		colorFill = 0;
 
+    // x == height, y == shadow, z == lolwut?
+    var vec = [Math.sin(sun_r_y), Math.cos(sun_r_y), Math.cos(sun_r_x)]
+      , shadow
+
+    console.log(vec[0], vec[1], vec[2])
+    var log_if = function(x, y) {
+      var args = [].slice.call(arguments, 2)
+      if(x === 16 && y === 16) console.log.apply(console, args)
+    }
 		for(x = 0; x <= size; x += unitSize){
 			for(y = 0; y <= size; y += unitSize){
         colorFill = Math.floor(map[x][y] * 250);
-        ctx.fillStyle = "rgb(" + colorFill + "," +  colorFill + "," + colorFill +")";
+
+        shadow = 0
+        if(Math.abs(vec[0]) > 0 || Math.abs(vec[1]) > 0)
+          for(var i = 0; i < size; ++i) {
+            var n_x = (x/unitSize + vec[0]*i)*unitSize
+              , n_y = (y/unitSize + vec[1]*i)*unitSize
+              , n_z = colorFill + vec[2]*i*unitSize
+
+            log_if(x, y, x, y, n_x, n_y, n_z-colorFill, n_z, colorFill)
+
+            if(~~n_x === x && ~~n_y === y)
+              continue
+
+            if(n_x < 0 || n_y < 0)
+              break
+
+            if(n_z < 0)
+              break
+
+            if(n_z > 250)
+              break
+
+            if(map[~~n_x] === undefined)
+              continue
+
+            if(map[~~n_x][~~n_y] * 250 > n_z) {
+              shadow = 32 
+              break
+            }
+          }
+
+        ctx.fillStyle = "rgb(" + colorFill + "," +  shadow + "," + shadow  +")";
 				ctx.fillRect (x, y, unitSize, unitSize);
 			}
 		}
